@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
     unoptimized: true,
-    domains: ['avatars.githubusercontent.com'],
-  },
-  experimental: {
-    serverActions: { allowedOrigins: ['*'] },
   },
 }
 
