@@ -12,7 +12,6 @@ export default function DashboardShell({
   profile: MockProfile
   children: React.ReactNode
 }) {
-  // Default open on desktop, closed on mobile
   const [open, setOpen] = useState(true)
 
   useEffect(() => {
@@ -22,11 +21,14 @@ export default function DashboardShell({
   }, [])
 
   return (
-    <div className="flex h-screen bg-gray-50 overflow-hidden">
-      {/* Mobile backdrop overlay */}
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: 'linear-gradient(135deg, #eef2f7 0%, #e8f0f9 50%, #eef2f7 100%)' }}
+    >
+      {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-20 lg:hidden"
           onClick={() => setOpen(false)}
         />
       )}
@@ -53,7 +55,7 @@ export default function DashboardShell({
           sidebarOpen={open}
           onMenuClick={() => setOpen(prev => !prev)}
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {children}
         </main>
       </div>
