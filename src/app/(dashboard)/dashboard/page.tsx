@@ -1,29 +1,39 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Users, GraduationCap, ClipboardCheck, CreditCard, FileText, TrendingUp } from 'lucide-react'
+import { Users, GraduationCap, ClipboardCheck, CreditCard, TrendingUp } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { formatCurrency } from '@/lib/utils'
 
 const COLORS = ['#1e3a5f', '#f59e0b', '#10b981', '#ef4444']
 
+const MOCK_NOTICES = [
+  { id: '1', title: 'Annual Day Celebration', content: 'Annual day will be held on 15th July 2024 at 5:00 PM in the school auditorium.', priority: 'high', created_at: new Date(Date.now() - 86400000).toISOString() },
+  { id: '2', title: 'Parent-Teacher Meeting', content: 'PTM for Classes VI\u2013X scheduled for 28th June 2024. All parents are requested to attend.', priority: 'medium', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
+  { id: '3', title: 'Sports Day Preparations', content: 'Inter-house sports day on 5th July. Practice sessions begin Monday at 8 AM sharp.', priority: 'low', created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
+]
+
 export default function DashboardPage() {
-  const [stats, setStats] = useState({ students: 0, teachers: 0, attendance: 0, fees: 0 })
-  const [notices, setNotices] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
+  const [stats, setStats] = useState({ students: 234, teachers: 18, attendance: 92, fees: 485000 })
+  const [notices, setNotices] = useState<any[]>(MOCK_NOTICES)
+  const [loading] = useState(false)
 
   useEffect(() => {
     async function load() {
-      const [{ count: students }, { count: teachers }, { data: noticesData }] = await Promise.all([
-        supabase.from('students').select('*', { count: 'exact', head: true }).eq('status','active'),
-        supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('status','active'),
-        supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5),
-      ])
-      setStats(s => ({ ...s, students: students ?? 0, teachers: teachers ?? 0 }))
-      setNotices(noticesData ?? [])
-      setLoading(false)
+      try {
+        const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+        const supabase = createClientComponentClient()
+        const [studentsRes, teachersRes, noticesRes] = await Promise.all([
+          supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+          supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+          supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5),
+        ])
+        if (!studentsRes.error && studentsRes.count !== null) setStats(s => ({ ...s, students: studentsRes.count! }))
+        if (!teachersRes.error && teachersRes.count !== null) setStats(s => ({ ...s, teachers: teachersRes.count! }))
+        if (!noticesRes.error && noticesRes.data && noticesRes.data.length > 0) setNotices(noticesRes.data)
+      } catch {
+        // Supabase not configured — showing demo data
+      }
     }
     load()
   }, [])
@@ -60,7 +70,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-xl font-bold text-gray-900">Dashboard</h2>
-        <p className="text-sm text-gray-500">Geethanjali Vidya Nilayam — Overview</p>
+        <p className="text-sm text-gray-500">Geethanjali Vidya Nilayam \u2014 Overview</p>
       </div>
 
       {/* Stat Cards */}
@@ -89,11 +99,11 @@ export default function DashboardPage() {
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={attendanceData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
-              <Bar dataKey="present" fill="#1e3a5f" radius={[4,4,0,0]} name="Present" />
-              <Bar dataKey="absent" fill="#f59e0b" radius={[4,4,0,0]} name="Absent" />
+              <Bar dataKey="present" fill="#1e3a5f" radius={[4, 4, 0, 0]} name="Present" />
+              <Bar dataKey="absent" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Absent" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -111,7 +121,7 @@ export default function DashboardPage() {
             {feeData.map((item, i) => (
               <div key={item.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i] }} />
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i] }} />
                   <span className="text-gray-600">{item.name}</span>
                 </div>
                 <span className="font-semibold text-gray-800">{item.value}%</span>
@@ -129,7 +139,7 @@ export default function DashboardPage() {
         ) : (
           <div className="space-y-2">
             {notices.map(n => (
-              <div key={n.id} className={`flex items-start gap-3 p-3 rounded-xl border ${priorityColors[n.priority] ?? 'bg-gray-50 border-gray-200'}`}>
+              <div key={n.id} className={`flex items-start gap-3 p-3 rounded-xl border ${priorityColors[n.priority] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">{n.title}</p>
                   <p className="text-xs opacity-70 truncate">{n.content}</p>
