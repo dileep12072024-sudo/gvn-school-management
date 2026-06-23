@@ -6,8 +6,7 @@ import { cookies } from 'next/headers'
 import { SESSION_COOKIE } from '@/lib/mock-auth'
 import type { MockProfile } from '@/lib/mock-auth'
 import { AuthProvider } from '@/context/AuthContext'
-import Sidebar from '@/components/layout/Sidebar'
-import Header from '@/components/layout/Header'
+import DashboardShell from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies()
@@ -24,15 +23,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AuthProvider initialProfile={profile}>
-      <div className="flex h-screen bg-gray-50 overflow-hidden">
-        <Sidebar role={(profile.role as any) ?? 'student'} />
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <Header profile={profile} />
-          <main className="flex-1 overflow-y-auto p-6">
-            {children}
-          </main>
-        </div>
-      </div>
+      <DashboardShell profile={profile}>
+        {children}
+      </DashboardShell>
     </AuthProvider>
   )
 }
