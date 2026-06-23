@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { GraduationCap, Eye, EyeOff, Lock, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -20,20 +19,29 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-      toast.error(error.message)
-    } else {
-      toast.success('Welcome back!')
-      router.push('/dashboard')
-      router.refresh()
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Invalid credentials')
+      } else {
+        toast.success('Welcome back!')
+        router.push('/dashboard')
+        router.refresh()
+      }
+    } catch {
+      toast.error('Network error. Please try again.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (

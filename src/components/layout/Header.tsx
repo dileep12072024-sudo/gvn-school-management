@@ -2,23 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Bell, ChevronDown, LogOut, User, Settings } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Settings } from 'lucide-react'
 import { getInitials, getRoleBadgeColor, getRoleLabel, cn } from '@/lib/utils'
-import type { Profile } from '@/types'
+import type { MockProfile } from '@/lib/mock-auth'
 import toast from 'react-hot-toast'
 
-interface HeaderProps { profile: Profile | null }
+interface HeaderProps { profile: MockProfile | null }
 
 export default function Header({ profile }: HeaderProps) {
   const [open, setOpen] = useState(false)
   const router = useRouter()
-  const supabase = createClientComponentClient()
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
+    await fetch('/api/auth/logout', { method: 'POST' })
     toast.success('Signed out')
     router.push('/login')
+    router.refresh()
   }
 
   return (
@@ -49,7 +48,9 @@ export default function Header({ profile }: HeaderProps) {
               <div className="px-4 py-3 border-b border-gray-50">
                 <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
                 <p className="text-xs text-gray-400">{profile?.email}</p>
-                <span className={cn('badge mt-1 inline-block', getRoleBadgeColor(profile?.role ?? ''))}>{getRoleLabel(profile?.role ?? '')}</span>
+                <span className={cn('badge mt-1 inline-block', getRoleBadgeColor(profile?.role ?? ''))}>
+                  {getRoleLabel(profile?.role ?? '')}
+                </span>
               </div>
               <div className="py-1">
                 <button onClick={() => { setOpen(false); router.push('/settings') }}

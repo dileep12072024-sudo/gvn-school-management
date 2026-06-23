@@ -1,13 +1,11 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Profile } from '@/types'
+import { createContext, useContext, useState, useCallback } from 'react'
+import type { MockProfile } from '@/lib/mock-auth'
 
 interface AuthContextType {
-  user: User | null
-  profile: Profile | null
+  user: MockProfile | null
+  profile: MockProfile | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
@@ -16,57 +14,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClientComponentClient()
+export function AuthProvider({
+  children,
+  initialProfile,
+}: {
+  children: React.ReactNode
+  initialProfile?: MockProfile | null
+}) {
+  const [profile, setProfile] = useState<MockProfile | null>(initialProfile ?? null)
+  const [loading] = useState(false)
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    setProfile(data)
-  }
-
-  const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id)
-  }
-
-  useEffect(() => {
-    const init = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      if (session?.user) await fetchProfile(session.user.id)
-      setLoading(false)
-    }
-    init()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
-        setProfile(null)
-      }
+  const signIn = useCallback(async (email: string, password: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     })
-
-    return () => subscription.unsubscribe()
+    const data = await res.json()
+    if (!res.ok) return { error: data.error || 'Invalid credentials' }
+    setProfile(data.profile)
+    return { error: null }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
-  }
+  const signOut = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    setProfile(null)
+  }, [])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-  }
+  const refreshProfile = useCallback(async () => {
+    // No-op for mock auth — profile is stable from cookie
+  }, [])
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user: profile, profile, loading, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
