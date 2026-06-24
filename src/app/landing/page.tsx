@@ -148,15 +148,15 @@ export default function LandingPage() {
         {/* Demo Accounts Section */}
         <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
           <div className="frosted-modal rounded-3xl p-6 sm:p-8 lg:p-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Demo Accounts</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">🔐 Demo Accounts</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {demoAccounts.map((account, idx) => (
                 <div key={idx} className="bg-white/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm border border-white/20">
                   <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-3">{account.role}</h3>
                   <div className="space-y-2 text-sm">
-                    <p><span className="text-gray-600">Email:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">{account.email}</code></p>
-                    <p><span className="text-gray-600">Password:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm">{account.password}</code></p>
+                    <p><span className="text-gray-600 font-medium">Email:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono">{account.email}</code></p>
+                    <p><span className="text-gray-600 font-medium">Password:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono">{account.password}</code></p>
                   </div>
                 </div>
               ))}
@@ -164,8 +164,7 @@ export default function LandingPage() {
 
             <div className="mt-8 p-4 bg-blue-50 rounded-2xl border border-blue-200">
               <p className="text-sm text-blue-900">
-                <span className="font-semibold">ℹ️ Note:</span> All demo accounts are available after database seeding. 
-                Use any of the above credentials to explore different dashboard roles.
+                <span className="font-semibold">ℹ️ Note:</span> Use any demo account above to explore different dashboard roles. All features are enabled!
               </p>
             </div>
           </div>
@@ -181,7 +180,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {techStack.map((tech, idx) => (
-              <div key={idx} className="liquid-glass rounded-2xl p-4 sm:p-6 text-center">
+              <div key={idx} className="liquid-glass rounded-2xl p-4 sm:p-6 text-center hover:scale-105 transition-transform">
                 <div className="text-3xl sm:text-4xl mb-2">{tech.icon}</div>
                 <p className="text-xs sm:text-sm font-medium text-white">{tech.name}</p>
               </div>
@@ -189,50 +188,30 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* CTA Section */}
+        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
+          <div className="liquid-glass rounded-3xl p-8 sm:p-12 lg:p-16 text-center">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
+              Ready to Explore? 🚀
+            </h2>
+            <p className="text-sm sm:text-base text-gray-200 mb-8 max-w-2xl mx-auto">
+              Experience the premium iOS 27 Liquid Glass UI with mobile-first responsive design
+            </p>
+            <Link href="/login" className="btn-liquid-primary inline-block">
+              Enter Dashboard Now
+            </Link>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-t border-white/10 backdrop-blur-xl bg-black/10">
           <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-8">
-              <div>
-                <h4 className="font-semibold text-white mb-4">Product</h4>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li><a href="#" className="hover:text-gold-400 transition">Features</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Pricing</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Security</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Company</h4>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li><a href="#" className="hover:text-gold-400 transition">About</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Blog</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Contact</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Legal</h4>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li><a href="#" className="hover:text-gold-400 transition">Privacy</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Terms</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">License</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-white mb-4">Social</h4>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li><a href="#" className="hover:text-gold-400 transition">GitHub</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">Twitter</a></li>
-                  <li><a href="#" className="hover:text-gold-400 transition">LinkedIn</a></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 pt-8">
-              <p className="text-center text-sm text-gray-400">
+            <div className="text-center">
+              <p className="text-sm text-gray-300 mb-2">
                 © 2024 Geethanjali Vidya Nilayam. Built with ❤️ by NETETI DILIP
               </p>
-              <p className="text-center text-xs text-gray-500 mt-2">
-                iOS 27 Liquid Glass UI System • Cloudflare Pages Deployment
+              <p className="text-xs text-gray-500">
+                iOS 27 Liquid Glass UI • Next.js 14 • Cloudflare Pages • Deployed Live 🌍
               </p>
             </div>
           </div>
@@ -252,12 +231,12 @@ const features = [
 ]
 
 const demoAccounts = [
-  { role: 'Organiser', email: 'organiser@gvn.edu.in', password: 'GVN@2024!' },
-  { role: 'Principal', email: 'principal@gvn.edu.in', password: 'GVN@2024!' },
-  { role: 'Vice Principal', email: 'vp@gvn.edu.in', password: 'GVN@2024!' },
-  { role: 'Teacher', email: 'teacher@gvn.edu.in', password: 'GVN@2024!' },
-  { role: 'Parent', email: 'parent@gvn.edu.in', password: 'GVN@2024!' },
-  { role: 'Student', email: 'student@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '👨‍💼 Organiser', email: 'organiser@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '👔 Principal', email: 'principal@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '📋 Vice Principal', email: 'vp@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '🧑‍🏫 Teacher', email: 'teacher@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '👨‍👩‍👧 Parent', email: 'parent@gvn.edu.in', password: 'GVN@2024!' },
+  { role: '🎓 Student', email: 'student@gvn.edu.in', password: 'GVN@2024!' },
 ]
 
 const techStack = [
