@@ -1,0 +1,377 @@
+/* ════════════════════════════════════════════════════════════════════════════════
+   iOS 27 LIQUID GLASS POLISHED UI SYSTEM
+   Premium Glassmorphic Design, Liquid Animations, Frosted Aesthetics
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   1. LIQUID GLASS EFFECTS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(31, 38, 135, 0.15);
+}
+
+.liquid-glass-dark {
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    0 8px 32px rgba(15, 23, 42, 0.3);
+}
+
+.liquid-glass-light {
+  background: rgba(248, 250, 252, 0.92);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 4px 16px rgba(15, 23, 42, 0.08);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   2. FROSTED GLASS VARIANTS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.frosted-container {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px) brightness(1.1);
+  -webkit-backdrop-filter: blur(16px) brightness(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.frosted-card {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) brightness(1.05);
+  -webkit-backdrop-filter: blur(20px) brightness(1.05);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+
+.frosted-modal {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) brightness(1.08);
+  -webkit-backdrop-filter: blur(24px) brightness(1.08);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.12);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   3. LIQUID SMOOTH ANIMATIONS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@keyframes liquidShift {
+  0%, 100% { background-position: 0% 50%; filter: blur(0); }
+  50% { background-position: 100% 50%; filter: blur(0.5px); }
+}
+
+@keyframes liquidFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+}
+
+@keyframes liquidFade {
+  0% { opacity: 0; transform: translateY(8px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes liquidGlow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 20px rgba(245, 158, 11, 0.2),
+      0 0 40px rgba(245, 158, 11, 0.1);
+  }
+  50% { 
+    box-shadow: 
+      0 0 30px rgba(245, 158, 11, 0.4),
+      0 0 60px rgba(245, 158, 11, 0.2);
+  }
+}
+
+@keyframes liquidPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes liquidShimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   4. POLISHED BUTTON STYLES
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.btn-liquid-primary {
+  @apply px-6 py-3 rounded-2xl font-semibold transition-all duration-300;
+  background: linear-gradient(135deg, #1e3a5f 0%, #2e5a96 100%);
+  box-shadow: 
+    0 4px 15px rgba(30, 58, 95, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-liquid-primary:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 
+    0 8px 30px rgba(30, 58, 95, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.btn-liquid-primary:active {
+  transform: translateY(0px) scale(0.99);
+}
+
+.btn-liquid-glass {
+  @apply px-6 py-3 rounded-2xl font-semibold transition-all duration-300;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.btn-liquid-glass:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   5. POLISHED CARD EFFECTS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.card-liquid {
+  animation: liquidFade 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.card-liquid:hover {
+  animation: liquidGlow 3s ease-in-out infinite;
+}
+
+.card-elevated {
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.12),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.card-elevated:hover {
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    0 12px 28px rgba(0, 0, 95, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   6. STAT CARD LIQUID DESIGN
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.stat-card-liquid {
+  @apply rounded-2xl p-6 relative overflow-hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(31, 38, 135, 0.12);
+  animation: liquidFade 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.stat-card-liquid::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: liquidShimmer 6s ease-in-out infinite;
+}
+
+.stat-card-liquid:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 12px 48px rgba(31, 38, 135, 0.2);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   7. LIQUID BADGE STYLES
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.badge-liquid {
+  @apply inline-block px-4 py-1.5 rounded-full text-xs font-semibold;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.1));
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #b45309;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+  animation: liquidFade 0.5s ease-out;
+}
+
+.badge-liquid.success {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(21, 128, 61, 0.1));
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #166534;
+}
+
+.badge-liquid.error {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #b91c1c;
+}
+
+/* ───────────────────────────────────────────────���──────────────────────────────
+   8. LIQUID INPUT & FORM ELEMENTS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.input-liquid {
+  @apply w-full px-4 py-3 rounded-xl text-sm transition-all duration-300;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #1e293b;
+}
+
+.input-liquid::placeholder {
+  color: rgba(100, 116, 139, 0.6);
+}
+
+.input-liquid:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(30, 58, 95, 0.5);
+  box-shadow: 
+    0 0 0 3px rgba(30, 58, 95, 0.1),
+    inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   9. LIQUID MODAL/DIALOG
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.modal-liquid-backdrop {
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: liquidFade 0.4s ease-out;
+}
+
+.modal-liquid-content {
+  animation: liquidFade 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   10. LIQUID GRADIENT BACKGROUNDS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.bg-liquid-gradient {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 25%, #152a45 50%, #2e5a96 75%, #1e3a5f 100%);
+  background-size: 400% 400%;
+  animation: liquidShift 12s ease infinite;
+}
+
+.bg-liquid-gradient-light {
+  background: linear-gradient(135deg, #f0f4f8 0%, #e0e7ff 25%, #f3e8ff 50%, #e0f2fe 75%, #f0f4f8 100%);
+  background-size: 400% 400%;
+  animation: liquidShift 15s ease infinite;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   11. LIQUID DIVIDER & SEPARATOR
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.divider-liquid {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   12. POLISHED SHADOWS
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.shadow-liquid-sm {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.shadow-liquid {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.shadow-liquid-lg {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+.shadow-liquid-xl {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   13. HOVER & INTERACTIVE STATES
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.interactive-liquid {
+  transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.interactive-liquid:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.interactive-liquid:active {
+  transform: translateY(0px);
+  filter: brightness(0.98);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   14. UTILITY: TEXT WITH LIQUID GLOW
+   ────────────────────────────────────────────────────────────────────────────── */
+
+.text-glow-gold {
+  color: #f59e0b;
+  text-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+}
+
+.text-glow-navy {
+  color: #1e3a5f;
+  text-shadow: 0 0 15px rgba(30, 58, 95, 0.2);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────────
+   15. RESPONSIVE & PERFORMANCE
+   ────────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .btn-liquid-primary,
+  .btn-liquid-glass {
+    @apply px-4 py-2.5;
+    font-size: 0.875rem;
+  }
+
+  .stat-card-liquid {
+    @apply p-4;
+  }
+}
