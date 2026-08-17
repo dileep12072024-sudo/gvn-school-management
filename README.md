@@ -109,17 +109,23 @@ A comprehensive full-stack school management web application with iOS 27 liquid 
 
 ---
 
-## 🔐 Demo Accounts
+## 🔐 Accounts
 
-Log in with these credentials (after running `seed.sql`):
+There is no public sign-up. Logins are Supabase Auth users created by the school;
+`profiles.role` decides what each one can reach, and RLS enforces it in the database.
 
-| Role | Email | Password |
-|---|---|---|
-| Organiser | organiser@gvn.edu.in | GVN@2024! |
-| Principal | principal@gvn.edu.in | GVN@2024! |
-| Vice Principal | vp@gvn.edu.in | GVN@2024! |
-| Teacher | teacher@gvn.edu.in | GVN@2024! |
-| Parent | parent@gvn.edu.in | GVN@2024! |
+Create the first accounts in **Supabase → Authentication → Users**, then set the role:
+
+```sql
+UPDATE public.profiles SET role = 'principal' WHERE email = 'principal@gvn.edu.in';
+```
+
+Roles: `organiser`, `principal`, `vice_principal`, `teacher`, `parent`, `student`.
+
+A parent or student only ever sees their own child/self — link them by setting
+`students.parent_id` (parent) or `students.profile_id` (student) to that profile's id.
+
+> Never commit real passwords to this file.
 
 ---
 
