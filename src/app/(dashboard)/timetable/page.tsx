@@ -1,162 +1,265 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Plus, Clock, CalendarDays } from 'lucide-react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { Plus, Clock, CalendarDays, Trash2, AlertTriangle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import { toPayload, validate, dbErrorMessage, required } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import { isAdmin } from '@/lib/nav'
+import { PageHeader, Modal, EmptyState, Toolbar } from '@/components/ui'
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const
 const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]
 
-const SUBJECT_PALETTES = [
-  { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-800',   sub: 'text-blue-500' },
-  { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-800', sub: 'text-purple-400' },
-  { bg: 'bg-emerald-50',border: 'border-emerald-200',text: 'text-emerald-800',sub: 'text-emerald-500' },
-  { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-800',  sub: 'text-amber-500' },
-  { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-800',   sub: 'text-rose-400' },
-  { bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-800',   sub: 'text-cyan-500' },
-  { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-800', sub: 'text-orange-500' },
-  { bg: 'bg-teal-50',   border: 'border-teal-200',   text: 'text-teal-800',   sub: 'text-teal-500' },
+// Muted, print-safe subject tints — deliberately not the neon set.
+const TINTS = [
+  { bg: '#e5ecf4', edge: '#b9cadd', ink: '#1e3a5f' },
+  { bg: '#f2e9dc', edge: '#ddc9a8', ink: '#8a6224' },
+  { bg: '#e2eee8', edge: '#b6d5c6', ink: '#1f5c42' },
+  { bg: '#f0e4e6', edge: '#dcbdc1', ink: '#94322b' },
+  { bg: '#e9e6f0', edge: '#c8c1da', ink: '#463c66' },
+  { bg: '#e6eef0', edge: '#bcd3d8', ink: '#265a63' },
 ]
 
+const EMPTY_SLOT = {
+  class_id: '', day: 'monday', period: '1', subject: '',
+  teacher_id: '', start_time: '08:00', end_time: '08:45',
+}
+
+const RULES = {
+  subject:    [required('Subject')],
+  start_time: [required('Start time')],
+  end_time:   [required('End time')],
+}
+
 export default function TimetablePage() {
-  const [slots, setSlots] = useState<any[]>([])
+  const { profile } = useAuth()
+  const supabase = useMemo(() => createClient(), [])
+  const canEdit = isAdmin(profile?.role)
+
   const [classes, setClasses] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
-  const [selectedClass, setSelectedClass] = useState('')
+  const [slots, setSlots] = useState<any[]>([])
+  const [allSlots, setAllSlots] = useState<any[]>([])
+  const [classId, setClassId] = useState('')
   const [loading, setLoading] = useState(false)
+
   const [showModal, setShowModal] = useState(false)
-  const supabase = createClientComponentClient()
-
-  const emptySlot = { class_id: '', day: 'monday', period: 1, subject: '', teacher_id: '', start_time: '08:00', end_time: '08:45' }
-  const [slotForm, setSlotForm] = useState(emptySlot)
-
-  // Build stable color index per subject name
-  const subjectColorIdx: Record<string, number> = {}
-  let ci = 0
-  const uniqueSubjects = Array.from(new Set(slots.map(s => s.subject).filter(Boolean)))
-  uniqueSubjects.forEach(subj => { subjectColorIdx[subj] = ci++ % SUBJECT_PALETTES.length })
+  const [form, setForm] = useState<Record<string, any>>(EMPTY_SLOT)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<any | null>(null)
 
   useEffect(() => {
-    supabase.from('classes').select('*').then(({ data }) => setClasses(data ?? []))
-    supabase.from('teachers').select('id, full_name').eq('status', 'active').then(({ data }) => setTeachers(data ?? []))
-  }, [])
+    supabase.from('classes').select('id, name, grade').order('grade')
+      .then(({ data }) => setClasses(data ?? []))
+    supabase.from('teachers').select('id, full_name').eq('status', 'active').order('full_name')
+      .then(({ data }) => setTeachers(data ?? []))
+    // Every slot school-wide, so we can spot a teacher double-booked.
+    supabase.from('timetable').select('id, day, period, teacher_id, class_id, classes(name)')
+      .then(({ data }) => setAllSlots(data ?? []))
+  }, [supabase])
 
-  useEffect(() => { if (selectedClass) loadSlots() }, [selectedClass])
-
-  async function loadSlots() {
+  const loadSlots = useCallback(async () => {
+    if (!classId) { setSlots([]); return }
     setLoading(true)
-    const { data } = await supabase.from('timetable').select('*, teachers(full_name)')
-      .eq('class_id', selectedClass)
-    setSlots((data ?? []).map((s: any) => ({ ...s, teacher_name: s.teachers?.full_name })))
+    const { data, error } = await supabase
+      .from('timetable')
+      .select('id, day, period, subject, start_time, end_time, teacher_id, teachers(full_name)')
+      .eq('class_id', classId)
+    if (error) toast.error(dbErrorMessage(error))
+    setSlots(data ?? [])
     setLoading(false)
+  }, [supabase, classId])
+
+  useEffect(() => { loadSlots() }, [loadSlots])
+
+  const tintFor = useMemo(() => {
+    const subjects = Array.from(new Set(slots.map(s => s.subject).filter(Boolean))).sort()
+    const map: Record<string, typeof TINTS[number]> = {}
+    subjects.forEach((s, i) => { map[s] = TINTS[i % TINTS.length] })
+    return map
+  }, [slots])
+
+  const slotAt = (day: string, period: number) =>
+    slots.find(s => s.day === day && s.period === period)
+
+  const openAdd = (day?: string, period?: number) => {
+    setForm({
+      ...EMPTY_SLOT,
+      class_id: classId,
+      day: day ?? 'monday',
+      period: String(period ?? 1),
+    })
+    setErrors({})
+    setShowModal(true)
   }
 
-  async function saveSlot() {
-    const { error } = await supabase.from('timetable')
-      .insert({ ...slotForm, class_id: selectedClass || slotForm.class_id })
-    if (error) { toast.error('Save failed'); return }
-    toast.success('Period added'); setShowModal(false); loadSlots()
+  const set = (k: string, v: any) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
   }
 
-  function getSlot(day: string, period: number) {
-    return slots.find(s => s.day === day && s.period === period)
+  /** The teacher already teaching this day+period somewhere else. */
+  const clash = useMemo(() => {
+    if (!form.teacher_id) return null
+    return allSlots.find(s =>
+      s.teacher_id === form.teacher_id &&
+      s.day === form.day &&
+      String(s.period) === String(form.period) &&
+      s.class_id !== classId)
+  }, [allSlots, form.teacher_id, form.day, form.period, classId])
+
+  async function save() {
+    const errs = validate(form, RULES)
+    if (!classId && !form.class_id) errs.class_id = 'Select a class first'
+    if (form.start_time && form.end_time && form.end_time <= form.start_time) {
+      errs.end_time = 'End time must be after start time'
+    }
+    if (slotAt(form.day, Number(form.period))) {
+      errs.period = 'That period is already filled for this class'
+    }
+    if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the highlighted fields'); return }
+
+    setSaving(true)
+    const payload = {
+      ...toPayload(form, EMPTY_SLOT),
+      class_id: classId || form.class_id,
+      period: Number(form.period),
+    }
+    const { error } = await supabase.from('timetable').insert(payload)
+    setSaving(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Period added')
+    setShowModal(false)
+    loadSlots()
+    supabase.from('timetable').select('id, day, period, teacher_id, class_id, classes(name)')
+      .then(({ data }) => setAllSlots(data ?? []))
   }
 
-  const selectedClassName = classes.find(c => c.id === selectedClass)?.name ?? ''
+  async function handleDelete() {
+    if (!deleting) return
+    const { error } = await supabase.from('timetable').delete().eq('id', deleting.id)
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Period removed')
+    setDeleting(null)
+    loadSlots()
+  }
+
+  const className = classes.find(c => c.id === classId)?.name ?? ''
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8e] flex items-center justify-center shadow-lg">
-            <CalendarDays className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Timetable</h2>
-            <p className="text-sm text-gray-500">Period-wise weekly schedule</p>
-          </div>
-        </div>
-        <button
-          onClick={() => { setSlotForm({ ...emptySlot, class_id: selectedClass }); setShowModal(true) }}
-          className="btn-gradient flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md">
-          <Plus className="w-4 h-4" /> Add Period
-        </button>
-      </div>
-
-      {/* Class Selector */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
-        <CalendarDays className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}
-          className="input w-52 rounded-xl border-gray-200 font-medium">
-          <option value="">Select Class</option>
-          {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        {selectedClassName && (
-          <span className="text-sm font-semibold text-[#1e3a5f] bg-blue-50 px-3 py-1 rounded-lg border border-blue-100">
-            {selectedClassName} — Weekly Schedule
-          </span>
+      <PageHeader
+        icon={CalendarDays}
+        title="Timetable"
+        subtitle={className ? `${className} — weekly schedule` : 'Period-wise weekly schedule'}
+        actions={canEdit && classId && (
+          <button onClick={() => openAdd()} className="btn btn-brass">
+            <Plus className="h-4 w-4" /> Add period
+          </button>
         )}
-      </div>
+      />
 
-      {/* Grid */}
-      {!selectedClass ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-            <Clock className="w-8 h-8 text-gray-300" />
-          </div>
-          <p className="text-gray-400 font-medium">Select a class to view timetable</p>
-          <p className="text-gray-300 text-sm mt-1">Choose a class to see the weekly period schedule</p>
+      <Toolbar>
+        <div className="sm:w-56">
+          <label htmlFor="tt-class" className="label">Class</label>
+          <select id="tt-class" value={classId} onChange={e => setClassId(e.target.value)} className="input">
+            <option value="">Select a class…</option>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        {slots.length > 0 && (
+          <p className="text-sm sm:ml-auto sm:self-end sm:pb-2" style={{ color: 'var(--ink-faint)' }}>
+            {slots.length} period{slots.length === 1 ? '' : 's'} scheduled
+          </p>
+        )}
+      </Toolbar>
+
+      {!classId ? (
+        <div className="panel p-4">
+          <EmptyState icon={Clock} title="Select a class" hint="Choose a class to see its weekly grid." />
         </div>
       ) : loading ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-          <div className="grid grid-cols-7 gap-2 mb-3">
-            {Array.from({ length: 7 }).map((_, i) => <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />)}
-          </div>
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="grid grid-cols-7 gap-2 mb-2">
-              {Array.from({ length: 7 }).map((_, j) => <div key={j} className="h-14 bg-gray-50 rounded-xl animate-pulse" />)}
-            </div>
-          ))}
+        <div className="panel p-6 space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton h-14" />)}
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" style={{ minWidth: 700 }}>
+        <div className="panel overflow-hidden">
+          <div className="scrollbar-thin overflow-x-auto">
+            <table className="w-full border-collapse" style={{ minWidth: 760 }}>
               <thead>
-                <tr className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8e]">
-                  <th className="px-3 py-3.5 text-left text-xs font-bold text-blue-200 w-16">Period</th>
+                <tr style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}>
+                  <th className="w-16 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-white/50">
+                    Period
+                  </th>
                   {DAYS.map(d => (
-                    <th key={d} className="px-3 py-3.5 text-left text-xs font-bold text-white capitalize">{d}</th>
+                    <th key={d} className="px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-white">
+                      {d.slice(0, 3)}
+                    </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody style={{ background: 'var(--surface)' }}>
                 {PERIODS.map(p => (
-                  <tr key={p} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-3 py-2.5">
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8e] flex items-center justify-center text-white text-xs font-bold mx-auto shadow-sm">
+                  <tr key={p} style={{ borderTop: '1px solid var(--edge)' }}>
+                    <td className="px-3 py-2">
+                      <div
+                        className="mx-auto grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white"
+                        style={{
+                          background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))',
+                          boxShadow: '0 2px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.2)',
+                        }}
+                      >
                         {p}
                       </div>
                     </td>
                     {DAYS.map(d => {
-                      const slot = getSlot(d, p)
-                      const palette = slot ? SUBJECT_PALETTES[subjectColorIdx[slot.subject] ?? 0] : null
+                      const slot = slotAt(d, p)
+                      const tint = slot ? tintFor[slot.subject] ?? TINTS[0] : null
                       return (
-                        <td key={d} className="px-2 py-2">
+                        <td key={d} className="px-1.5 py-1.5 align-top">
                           {slot ? (
-                            <div className={`${palette!.bg} border ${palette!.border} rounded-xl p-2.5 transition-all hover:shadow-sm`}>
-                              <p className={`font-bold text-xs ${palette!.text}`}>{slot.subject}</p>
-                              {slot.teacher_name && (
-                                <p className={`${palette!.sub} text-xs mt-0.5 truncate`}>{slot.teacher_name}</p>
+                            <div
+                              className="group relative rounded-[var(--radius-sm)] p-2.5"
+                              style={{
+                                background: tint!.bg,
+                                border: `1px solid ${tint!.edge}`,
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px rgba(22,32,46,.06)',
+                              }}
+                            >
+                              <p className="text-xs font-bold" style={{ color: tint!.ink }}>{slot.subject}</p>
+                              {slot.teachers?.full_name && (
+                                <p className="mt-0.5 truncate text-[11px]" style={{ color: tint!.ink, opacity: .7 }}>
+                                  {slot.teachers.full_name}
+                                </p>
                               )}
-                              <p className="text-gray-400 text-xs mt-0.5">{slot.start_time}–{slot.end_time}</p>
+                              <p className="mt-0.5 text-[10px] tabular-nums" style={{ color: 'var(--ink-faint)' }}>
+                                {String(slot.start_time).slice(0, 5)}–{String(slot.end_time).slice(0, 5)}
+                              </p>
+                              {canEdit && (
+                                <button
+                                  onClick={() => setDeleting(slot)}
+                                  aria-label={`Remove ${slot.subject} on ${d} period ${p}`}
+                                  className="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+                                >
+                                  <Trash2 className="h-3 w-3" style={{ color: '#b8443c' }} />
+                                </button>
+                              )}
                             </div>
+                          ) : canEdit ? (
+                            <button
+                              onClick={() => openAdd(d, p)}
+                              aria-label={`Add period ${p} on ${d}`}
+                              className="grid h-[68px] w-full place-items-center rounded-[var(--radius-sm)] text-lg transition-colors"
+                              style={{ border: '1px dashed var(--edge-strong)', color: 'var(--edge-strong)' }}
+                            >
+                              +
+                            </button>
                           ) : (
-                            <div className="h-16 rounded-xl border-2 border-dashed border-gray-100 flex items-center justify-center group-hover:border-gray-200 transition-colors">
-                              <span className="text-gray-200 text-xl leading-none">+</span>
-                            </div>
+                            <div className="h-[68px]" />
                           )}
                         </td>
                       )
@@ -169,71 +272,105 @@ export default function TimetablePage() {
         </div>
       )}
 
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8e] p-6">
-              <h3 className="font-bold text-white text-lg">Add Period</h3>
-              <p className="text-blue-200 text-sm mt-0.5">Schedule a new class period</p>
-            </div>
-            <div className="p-6 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Day</label>
-                <select value={slotForm.day} onChange={e => setSlotForm(p => ({ ...p, day: e.target.value }))}
-                  className="input rounded-xl border-gray-200 w-full capitalize">
-                  {DAYS.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
-                </select>
+      {/* ── Add period ────────────────────────────────── */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Add a period"
+        subtitle={className}
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={save} disabled={saving}>
+              {saving ? 'Saving…' : 'Add period'}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="day" className="label">Day</label>
+            <select id="day" value={form.day} onChange={e => set('day', e.target.value)} className="input capitalize">
+              {DAYS.map(d => <option key={d} value={d} className="capitalize">{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="period" className="label">Period</label>
+            <select
+              id="period" value={form.period} onChange={e => set('period', e.target.value)}
+              className={`input ${errors.period ? 'input-error' : ''}`}
+            >
+              {PERIODS.map(p => <option key={p} value={p}>Period {p}</option>)}
+            </select>
+            {errors.period && <p className="field-error">{errors.period}</p>}
+          </div>
+
+          <div className="col-span-2">
+            <label htmlFor="subject" className="label">Subject</label>
+            <input
+              id="subject" value={form.subject} onChange={e => set('subject', e.target.value)}
+              className={`input ${errors.subject ? 'input-error' : ''}`} placeholder="Mathematics"
+            />
+            {errors.subject && <p className="field-error">{errors.subject}</p>}
+          </div>
+
+          <div className="col-span-2">
+            <label htmlFor="teacher_id" className="label">Teacher</label>
+            <select id="teacher_id" value={form.teacher_id} onChange={e => set('teacher_id', e.target.value)} className="input">
+              <option value="">Not assigned</option>
+              {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+            </select>
+            {clash && (
+              <div
+                className="mt-2 flex items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2"
+                style={{ background: '#f6dedc', border: '1px solid #e0b4b0' }}
+              >
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: '#94322b' }} />
+                <p className="text-xs" style={{ color: '#94322b' }}>
+                  This teacher already has period {form.period} on {form.day} with{' '}
+                  <strong>{clash.classes?.name}</strong>. Saving will double-book them.
+                </p>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Period #</label>
-                <select value={slotForm.period} onChange={e => setSlotForm(p => ({ ...p, period: Number(e.target.value) }))}
-                  className="input rounded-xl border-gray-200 w-full">
-                  {PERIODS.map(p => <option key={p} value={p}>Period {p}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Subject</label>
-                <input value={slotForm.subject}
-                  onChange={e => setSlotForm(p => ({ ...p, subject: e.target.value }))}
-                  placeholder="e.g. Mathematics"
-                  className="input rounded-xl border-gray-200 w-full" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Teacher</label>
-                <select value={slotForm.teacher_id}
-                  onChange={e => setSlotForm(p => ({ ...p, teacher_id: e.target.value }))}
-                  className="input rounded-xl border-gray-200 w-full">
-                  <option value="">Select teacher</option>
-                  {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Start Time</label>
-                <input type="time" value={slotForm.start_time}
-                  onChange={e => setSlotForm(p => ({ ...p, start_time: e.target.value }))}
-                  className="input rounded-xl border-gray-200 w-full" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">End Time</label>
-                <input type="time" value={slotForm.end_time}
-                  onChange={e => setSlotForm(p => ({ ...p, end_time: e.target.value }))}
-                  className="input rounded-xl border-gray-200 w-full" />
-              </div>
-            </div>
-            <div className="px-6 pb-6 flex justify-end gap-3 border-t border-gray-50 pt-4">
-              <button onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={saveSlot}
-                className="btn-gradient px-5 py-2 rounded-xl text-white text-sm font-semibold shadow-md">
-                Add Period
-              </button>
-            </div>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="start_time" className="label">Start time</label>
+            <input
+              id="start_time" type="time" value={form.start_time}
+              onChange={e => set('start_time', e.target.value)}
+              className={`input ${errors.start_time ? 'input-error' : ''}`}
+            />
+            {errors.start_time && <p className="field-error">{errors.start_time}</p>}
+          </div>
+          <div>
+            <label htmlFor="end_time" className="label">End time</label>
+            <input
+              id="end_time" type="time" value={form.end_time}
+              onChange={e => set('end_time', e.target.value)}
+              className={`input ${errors.end_time ? 'input-error' : ''}`}
+            />
+            {errors.end_time && <p className="field-error">{errors.end_time}</p>}
           </div>
         </div>
-      )}
+      </Modal>
+
+      {/* ── Delete ────────────────────────────────────── */}
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Remove period"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setDeleting(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={handleDelete}>Remove</button>
+          </>
+        }
+      >
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Remove <strong>{deleting?.subject}</strong> from period {deleting?.period} on {deleting?.day}?
+        </p>
+      </Modal>
     </div>
   )
 }

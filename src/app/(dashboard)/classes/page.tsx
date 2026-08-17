@@ -1,172 +1,336 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Plus, BookOpen, Edit, Trash2, Users } from 'lucide-react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { Plus, BookOpen, Pencil, Trash2, Users, LayoutGrid } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import { toPayload, validate, dbErrorMessage, required, positive, type Rule } from '@/lib/utils'
+import {
+  PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows, Tilt3D,
+} from '@/components/ui'
+
+const EMPTY_CLASS = { name: '', grade: '1' }
+const EMPTY_SECTION = { class_id: '', name: '', teacher_id: '', capacity: '40' }
+
+type Tab = 'classes' | 'sections'
 
 export default function ClassesPage() {
+  const supabase = useMemo(() => createClient(), [])
+
+  const [tab, setTab] = useState<Tab>('classes')
   const [classes, setClasses] = useState<any[]>([])
   const [sections, setSections] = useState<any[]>([])
   const [teachers, setTeachers] = useState<any[]>([])
-  const [activeTab, setActiveTab] = useState<'classes' | 'sections'>('classes')
+  const [counts, setCounts] = useState<Record<string, number>>({})
+  const [loading, setLoading] = useState(true)
+
   const [showModal, setShowModal] = useState(false)
-  const supabase = createClientComponentClient()
+  const [editing, setEditing] = useState<any | null>(null)
+  const [form, setForm] = useState<Record<string, any>>(EMPTY_CLASS)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<{ kind: Tab; row: any } | null>(null)
 
-  const emptyClass = { name: '', grade: 1 }
-  const emptySection = { class_id: '', name: '', teacher_id: '', capacity: 40 }
-  const [classForm, setClassForm] = useState(emptyClass)
-  const [sectionForm, setSectionForm] = useState(emptySection)
-
-  useEffect(() => { fetchAll() }, [])
-
-  async function fetchAll() {
-    const [{ data: cls }, { data: sec }, { data: teach }] = await Promise.all([
-      supabase.from('classes').select('*').order('grade'),
-      supabase.from('sections').select('*, classes(name), teachers(full_name)').order('name'),
-      supabase.from('teachers').select('id, full_name').eq('status', 'active'),
+  const fetchAll = useCallback(async () => {
+    setLoading(true)
+    const [cls, sec, teach, studs] = await Promise.all([
+      supabase.from('classes').select('id, name, grade').order('grade'),
+      supabase.from('sections').select('id, name, capacity, class_id, teacher_id, classes(name), teachers(full_name)').order('name'),
+      supabase.from('teachers').select('id, full_name').eq('status', 'active').order('full_name'),
+      supabase.from('students').select('class_id').eq('status', 'active'),
     ])
-    setClasses(cls ?? [])
-    setSections((sec ?? []).map((s: any) => ({ ...s, class_name: s.classes?.name, teacher_name: s.teachers?.full_name })))
-    setTeachers(teach ?? [])
+
+    const byClass: Record<string, number> = {}
+    ;((studs.data ?? []) as any[]).forEach(s => {
+      if (s.class_id) byClass[s.class_id] = (byClass[s.class_id] ?? 0) + 1
+    })
+
+    setClasses(cls.data ?? [])
+    setSections(sec.data ?? [])
+    setTeachers(teach.data ?? [])
+    setCounts(byClass)
+    setLoading(false)
+  }, [supabase])
+
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  const shape = tab === 'classes' ? EMPTY_CLASS : EMPTY_SECTION
+
+  const openAdd = () => {
+    setEditing(null); setForm(shape); setErrors({}); setShowModal(true)
   }
 
-  async function saveClass() {
-    const { error } = await supabase.from('classes').insert(classForm)
-    if (error) { toast.error('Failed'); return }
-    toast.success('Class added'); setShowModal(false); setClassForm(emptyClass); fetchAll()
+  const openEdit = (row: any) => {
+    setEditing(row)
+    // Strip the joined `classes`/`teachers` objects — not columns.
+    setForm(toPayload({ ...shape, ...row, grade: String(row.grade ?? ''), capacity: String(row.capacity ?? '') }, shape))
+    setErrors({}); setShowModal(true)
   }
 
-  async function saveSection() {
-    const { error } = await supabase.from('sections').insert(sectionForm)
-    if (error) { toast.error('Failed'); return }
-    toast.success('Section added'); setShowModal(false); setSectionForm(emptySection); fetchAll()
+  const set = (k: string, v: any) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
   }
 
-  async function deleteClass(id: string) {
-    if (!confirm('Delete this class?')) return
-    await supabase.from('classes').delete().eq('id', id)
-    toast.success('Deleted'); fetchAll()
+  async function save() {
+    const rules: Record<string, Rule[]> = tab === 'classes'
+      ? { name: [required('Class name')], grade: [required('Grade'), positive('Grade')] }
+      : { class_id: [required('Class')], name: [required('Section name')], capacity: [required('Capacity'), positive('Capacity')] }
+
+    const errs = validate(form, rules)
+    if (tab === 'classes' && form.grade && (Number(form.grade) < 1 || Number(form.grade) > 12)) {
+      errs.grade = 'Grade must be between 1 and 12'
+    }
+    if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the highlighted fields'); return }
+
+    setSaving(true)
+    const table = tab === 'classes' ? 'classes' : 'sections'
+    const payload: Record<string, any> = tab === 'classes'
+      ? { ...toPayload(form, EMPTY_CLASS), grade: Number(form.grade) }
+      : { ...toPayload(form, EMPTY_SECTION), capacity: Number(form.capacity) }
+
+    const { error } = editing
+      ? await supabase.from(table).update(payload).eq('id', editing.id)
+      : await supabase.from(table).insert(payload)
+    setSaving(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success(editing ? 'Updated' : tab === 'classes' ? 'Class added' : 'Section added')
+    setShowModal(false)
+    fetchAll()
   }
+
+  async function handleDelete() {
+    if (!deleting) return
+    const table = deleting.kind === 'classes' ? 'classes' : 'sections'
+    const { error } = await supabase.from(table).delete().eq('id', deleting.row.id)
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Deleted')
+    setDeleting(null)
+    fetchAll()
+  }
+
+  const enrolled = deleting?.kind === 'classes' ? (counts[deleting.row.id] ?? 0) : 0
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Classes & Sections</h2>
-          <p className="text-sm text-gray-500">{classes.length} classes, {sections.length} sections</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Add {activeTab === 'classes' ? 'Class' : 'Section'}
-        </button>
+      <PageHeader
+        icon={BookOpen}
+        title="Classes & sections"
+        subtitle={`${classes.length} classes · ${sections.length} sections`}
+        actions={
+          <button onClick={openAdd} className="btn btn-brass">
+            <Plus className="h-4 w-4" /> Add {tab === 'classes' ? 'class' : 'section'}
+          </button>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Classes" value={classes.length} icon={BookOpen} tone="navy" />
+        <StatCard label="Sections" value={sections.length} icon={LayoutGrid} tone="brass" />
+        <StatCard label="Students enrolled" value={Object.values(counts).reduce((a, b) => a + b, 0)} icon={Users} tone="green" />
       </div>
 
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
-        {(['classes', 'sections'] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${
-              activeTab === tab ? 'bg-white shadow text-[#1e3a5f]' : 'text-gray-500 hover:text-gray-700'
-            }`}>{tab}</button>
+      {/* Segmented control — a milled switch, not a pill */}
+      <div
+        className="inline-flex gap-1 rounded-[var(--radius-sm)] p-1"
+        style={{ background: 'var(--surface-sunk)', border: '1px solid var(--edge-strong)', boxShadow: 'var(--sunk)' }}
+        role="tablist"
+      >
+        {(['classes', 'sections'] as const).map(t => (
+          <button
+            key={t}
+            role="tab"
+            aria-selected={tab === t}
+            onClick={() => setTab(t)}
+            className="rounded-[8px] px-4 py-1.5 text-sm font-semibold capitalize transition-all duration-200"
+            style={tab === t ? {
+              background: 'linear-gradient(180deg, var(--surface), var(--surface-sunk))',
+              color: 'var(--navy)',
+              boxShadow: '0 1px 2px rgba(22,32,46,.14), inset 0 1px 0 rgba(255,255,255,.9)',
+            } : { color: 'var(--ink-faint)' }}
+          >
+            {t}
+          </button>
         ))}
       </div>
 
-      {activeTab === 'classes' ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {classes.map(c => (
-            <div key={c.id} className="card p-5 hover:border-[#1e3a5f]/20 transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <div className="w-10 h-10 bg-[#1e3a5f]/10 rounded-xl flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-[#1e3a5f]" />
+      {tab === 'classes' ? (
+        loading ? (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="panel p-5"><div className="skeleton h-20" /></div>)}
+          </div>
+        ) : classes.length === 0 ? (
+          <div className="panel p-4">
+            <EmptyState icon={BookOpen} title="No classes yet" hint="Add Class 1 to get started." />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {classes.map(c => (
+              <Tilt3D key={c.id} className="panel p-5">
+                <div className="layer-1">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div
+                      className="grid h-10 w-10 place-items-center rounded-[var(--radius-sm)] text-white"
+                      style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}
+                    >
+                      <BookOpen className="h-5 w-5" />
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(c)} className="btn btn-ghost btn-icon" aria-label={`Edit ${c.name}`}>
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button onClick={() => setDeleting({ kind: 'classes', row: c })} className="btn btn-ghost btn-icon" aria-label={`Delete ${c.name}`}>
+                        <Trash2 className="h-3 w-3" style={{ color: '#b8443c' }} />
+                      </button>
+                    </div>
+                  </div>
+                  <p className="text-lg font-bold" style={{ color: 'var(--ink)' }}>{c.name}</p>
+                  <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>Grade {c.grade}</p>
+                  <div className="mt-3 flex items-center gap-3 text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    <span className="flex items-center gap-1">
+                      <LayoutGrid className="h-3 w-3" /> {sections.filter(s => s.class_id === c.id).length} sections
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Users className="h-3 w-3" /> {counts[c.id] ?? 0}
+                    </span>
+                  </div>
                 </div>
-                <button onClick={() => deleteClass(c.id)} className="p-1 hover:bg-red-50 text-red-400 rounded-lg">
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <p className="font-bold text-gray-900 text-lg">{c.name}</p>
-              <p className="text-sm text-gray-500">Grade {c.grade}</p>
-              <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
-                <Users className="w-3 h-3" />
-                {sections.filter(s => s.class_id === c.id).length} sections
-              </div>
-            </div>
-          ))}
-          {classes.length === 0 && (
-            <div className="col-span-4 card p-12 text-center">
-              <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-400">No classes added yet</p>
-            </div>
-          )}
-        </div>
+              </Tilt3D>
+            ))}
+          </div>
+        )
       ) : (
-        <div className="card overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>{['Class', 'Section', 'Class Teacher', 'Capacity'].map(h => <th key={h} className="table-header">{h}</th>)}</tr>
-            </thead>
-            <tbody className="divide-y">
-              {sections.map(s => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="table-cell font-semibold text-[#1e3a5f]">{s.class_name}</td>
-                  <td className="table-cell font-medium">{s.name}</td>
-                  <td className="table-cell">{s.teacher_name ?? <span className="text-gray-400">Not assigned</span>}</td>
-                  <td className="table-cell">{s.capacity}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <TableShell columns={['Class', 'Section', 'Class teacher', 'Capacity', 'Actions']}>
+          {loading ? (
+            <SkeletonRows cols={5} />
+          ) : sections.length === 0 ? (
+            <EmptyState icon={LayoutGrid} title="No sections yet" hint="Add a section under a class." colSpan={5} />
+          ) : sections.map(s => (
+            <tr key={s.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
+              <td className="table-cell font-semibold" style={{ color: 'var(--navy)' }}>{s.classes?.name ?? '—'}</td>
+              <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>{s.name}</td>
+              <td className="table-cell">
+                {s.teachers?.full_name ?? <span style={{ color: 'var(--ink-faint)' }}>Not assigned</span>}
+              </td>
+              <td className="table-cell tabular-nums">{s.capacity}</td>
+              <td className="table-cell">
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => openEdit(s)} className="btn btn-ghost btn-icon" aria-label={`Edit section ${s.name}`}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button onClick={() => setDeleting({ kind: 'sections', row: s })} className="btn btn-ghost btn-icon" aria-label={`Delete section ${s.name}`}>
+                    <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </TableShell>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
-            <div className="p-6 border-b">
-              <h3 className="font-bold text-lg">Add {activeTab === 'classes' ? 'Class' : 'Section'}</h3>
+      {/* ── Add / edit ────────────────────────────────── */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title={`${editing ? 'Edit' : 'New'} ${tab === 'classes' ? 'class' : 'section'}`}
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={save} disabled={saving}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+          </>
+        }
+      >
+        {tab === 'classes' ? (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="name" className="label">Class name</label>
+              <input
+                id="name" value={form.name ?? ''} onChange={e => set('name', e.target.value)}
+                className={`input ${errors.name ? 'input-error' : ''}`} placeholder="Class 1"
+              />
+              {errors.name && <p className="field-error">{errors.name}</p>}
             </div>
-            {activeTab === 'classes' ? (
-              <div className="p-6 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Class Name</label>
-                  <input value={classForm.name} onChange={e => setClassForm(p => ({ ...p, name: e.target.value }))} className="input" placeholder="e.g. Class 1" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Grade</label>
-                  <input type="number" min={1} max={12} value={classForm.grade} onChange={e => setClassForm(p => ({ ...p, grade: Number(e.target.value) }))} className="input" />
-                </div>
-              </div>
-            ) : (
-              <div className="p-6 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
-                  <select value={sectionForm.class_id} onChange={e => setSectionForm(p => ({ ...p, class_id: e.target.value }))} className="input">
-                    <option value="">Select</option>
-                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Section Name</label>
-                  <input value={sectionForm.name} onChange={e => setSectionForm(p => ({ ...p, name: e.target.value }))} className="input" placeholder="A, B, C..." />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Class Teacher</label>
-                  <select value={sectionForm.teacher_id} onChange={e => setSectionForm(p => ({ ...p, teacher_id: e.target.value }))} className="input">
-                    <option value="">Select</option>
-                    {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Capacity</label>
-                  <input type="number" value={sectionForm.capacity} onChange={e => setSectionForm(p => ({ ...p, capacity: Number(e.target.value) }))} className="input" />
-                </div>
-              </div>
-            )}
-            <div className="p-6 pt-0 flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={activeTab === 'classes' ? saveClass : saveSection} className="btn-primary">Save</button>
+            <div>
+              <label htmlFor="grade" className="label">Grade (1–12)</label>
+              <input
+                id="grade" type="number" min={1} max={12} value={form.grade ?? ''}
+                onChange={e => set('grade', e.target.value)}
+                className={`input ${errors.grade ? 'input-error' : ''}`}
+              />
+              {errors.grade && <p className="field-error">{errors.grade}</p>}
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="class_id" className="label">Class</label>
+              <select
+                id="class_id" value={form.class_id ?? ''} onChange={e => set('class_id', e.target.value)}
+                className={`input ${errors.class_id ? 'input-error' : ''}`}
+              >
+                <option value="">Select…</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {errors.class_id && <p className="field-error">{errors.class_id}</p>}
+            </div>
+            <div>
+              <label htmlFor="sec_name" className="label">Section name</label>
+              <input
+                id="sec_name" value={form.name ?? ''} onChange={e => set('name', e.target.value)}
+                className={`input ${errors.name ? 'input-error' : ''}`} placeholder="A"
+              />
+              {errors.name && <p className="field-error">{errors.name}</p>}
+            </div>
+            <div>
+              <label htmlFor="teacher_id" className="label">Class teacher</label>
+              <select id="teacher_id" value={form.teacher_id ?? ''} onChange={e => set('teacher_id', e.target.value)} className="input">
+                <option value="">Not assigned</option>
+                {teachers.map(t => <option key={t.id} value={t.id}>{t.full_name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="capacity" className="label">Capacity</label>
+              <input
+                id="capacity" type="number" min={1} value={form.capacity ?? ''}
+                onChange={e => set('capacity', e.target.value)}
+                className={`input ${errors.capacity ? 'input-error' : ''}`}
+              />
+              {errors.capacity && <p className="field-error">{errors.capacity}</p>}
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Delete ────────────────────────────────────── */}
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title={`Delete ${deleting?.kind === 'classes' ? 'class' : 'section'}`}
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setDeleting(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          </>
+        }
+      >
+        {deleting?.kind === 'classes' ? (
+          <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+            Deleting <strong>{deleting.row.name}</strong> also deletes its sections, timetable and exams.
+            {enrolled > 0 && (
+              <> <strong>{enrolled} student{enrolled === 1 ? ' is' : 's are'}</strong> still enrolled — they will be left
+              without a class.</>
+            )}
+          </p>
+        ) : (
+          <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+            Delete section <strong>{deleting?.row.name}</strong> of {deleting?.row.classes?.name}? Students in it
+            will be left without a section.
+          </p>
+        )}
+      </Modal>
     </div>
   )
 }

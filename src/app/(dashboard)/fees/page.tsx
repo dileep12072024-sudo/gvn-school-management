@@ -1,231 +1,390 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Plus, Search, CreditCard, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react'
-import { formatDate, formatCurrency } from '@/lib/utils'
-import type { Fee } from '@/types'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import Link from 'next/link'
+import {
+  Plus, Search, CreditCard, AlertCircle, CheckCircle, Wallet, Receipt, Trash2,
+} from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import {
+  formatDate, formatCurrency, toPayload, validate, dbErrorMessage,
+  required, positive,
+} from '@/lib/utils'
+import {
+  PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows, Pagination, Toolbar,
+} from '@/components/ui'
+
+const PAGE_SIZE = 25
+
+const EMPTY_FORM = {
+  student_id: '',
+  fee_type: '',
+  amount: '',
+  due_date: '',
+  status: 'pending',
+}
+
+const RULES = {
+  student_id: [required('Student')],
+  fee_type:   [required('Fee type')],
+  amount:     [required('Amount'), positive('Amount')],
+  due_date:   [required('Due date')],
+}
+
+const FEE_TYPES = ['Tuition', 'Transport', 'Examination', 'Library', 'Laboratory', 'Uniform', 'Admission', 'Other']
+
+const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
+  paid:    { bg: '#dcece3', fg: '#1f5c42' },
+  pending: { bg: '#f5e6cd', fg: '#8a6224' },
+  overdue: { bg: '#f6dedc', fg: '#94322b' },
+}
+
+/** GVN/2024-25/000137 — readable, sortable, unique per record. */
+function receiptNumber(seq: number) {
+  const y = new Date().getFullYear()
+  const ay = new Date().getMonth() >= 3 ? `${y}-${String(y + 1).slice(2)}` : `${y - 1}-${String(y).slice(2)}`
+  return `GVN/${ay}/${String(seq).padStart(6, '0')}`
+}
 
 export default function FeesPage() {
-  const [fees, setFees] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [showModal, setShowModal] = useState(false)
-  const supabase = createClientComponentClient()
+  const supabase = useMemo(() => createClient(), [])
 
-  const emptyForm = { student_id: '', amount: '', fee_type: '', due_date: '', status: 'pending' }
-  const [form, setForm] = useState(emptyForm)
+  const [rows, setRows] = useState<any[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
   const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const [totals, setTotals] = useState({ collected: 0, pending: 0, overdue: 0, overdueCount: 0 })
+
+  const [search, setSearch] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+
+  const [showModal, setShowModal] = useState(false)
+  const [form, setForm] = useState<Record<string, any>>(EMPTY_FORM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [paying, setPaying] = useState<any | null>(null)
+  const [deleting, setDeleting] = useState<any | null>(null)
 
   useEffect(() => {
-    fetchFees()
-    supabase.from('students').select('id, full_name, admission_number')
-      .eq('status', 'active').then(({ data }) => setStudents(data ?? []))
-  }, [])
+    const t = setTimeout(() => { setDebounced(search); setPage(0) }, 300)
+    return () => clearTimeout(t)
+  }, [search])
 
-  async function fetchFees() {
+  useEffect(() => {
+    supabase.from('students').select('id, full_name, admission_number')
+      .eq('status', 'active').order('full_name')
+      .then(({ data }) => setStudents(data ?? []))
+  }, [supabase])
+
+  /** Totals are computed over every row, not just the current page. */
+  const fetchTotals = useCallback(async () => {
+    const { data } = await supabase.from('fees').select('amount, status')
+    const fees = (data ?? []) as { amount: number; status: string }[]
+    const sum = (s: string) => fees.filter(f => f.status === s).reduce((a, f) => a + Number(f.amount || 0), 0)
+    setTotals({
+      collected: sum('paid'),
+      pending: sum('pending'),
+      overdue: sum('overdue'),
+      overdueCount: fees.filter(f => f.status === 'overdue').length,
+    })
+  }, [supabase])
+
+  const fetchFees = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('fees')
-      .select('*, students(full_name, admission_number, classes(name))')
+    let q = supabase
+      .from('fees')
+      .select('id, amount, fee_type, due_date, status, paid_date, receipt_number, student_id, students(full_name, admission_number, classes(name))',
+        { count: 'exact' })
       .order('due_date', { ascending: false })
-    setFees((data ?? []).map((f: any) => ({
-      ...f,
-      student_name: f.students?.full_name,
-      class_name: f.students?.classes?.name
-    })))
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1)
+
+    if (statusFilter !== 'all') q = q.eq('status', statusFilter)
+
+    const { data, count, error } = await q
+    if (error) toast.error(dbErrorMessage(error))
+
+    let list = data ?? []
+    // The student name lives on the joined table, so filter it client-side
+    // over the page. ponytail: fine to ~thousands of rows; if it grows, add a
+    // Postgres view exposing student_name and filter server-side.
+    if (debounced.trim()) {
+      const t = debounced.trim().toLowerCase()
+      list = list.filter((f: any) =>
+        (f.students?.full_name ?? '').toLowerCase().includes(t) ||
+        (f.students?.admission_number ?? '').toLowerCase().includes(t))
+    }
+
+    setRows(list)
+    setTotal(count ?? 0)
     setLoading(false)
+  }, [supabase, page, statusFilter, debounced])
+
+  useEffect(() => { fetchFees(); fetchTotals() }, [fetchFees, fetchTotals])
+
+  const set = (k: string, v: any) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
   }
 
   async function handleAdd() {
-    const { error } = await supabase.from('fees').insert({ ...form, amount: Number(form.amount) })
-    if (error) { toast.error('Failed to add fee'); return }
-    toast.success('Fee record added')
-    setShowModal(false); setForm(emptyForm); fetchFees()
+    const errs = validate(form, RULES)
+    if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the highlighted fields'); return }
+
+    setSaving(true)
+    const payload = { ...toPayload(form, EMPTY_FORM), amount: Number(form.amount) }
+    const { error } = await supabase.from('fees').insert(payload)
+    setSaving(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Fee raised')
+    setShowModal(false)
+    setForm(EMPTY_FORM)
+    fetchFees(); fetchTotals()
   }
 
-  async function markPaid(id: string) {
-    await supabase.from('fees').update({
+  async function recordPayment() {
+    if (!paying) return
+    setSaving(true)
+
+    // Sequence off the count of already-paid records. Single-clerk school, so
+    // a collision needs two simultaneous clerks; the UNIQUE-ish check below
+    // catches it rather than silently duplicating.
+    // ponytail: swap for a Postgres sequence if two offices ever collect at once.
+    const { count } = await supabase
+      .from('fees').select('id', { count: 'exact', head: true }).eq('status', 'paid')
+
+    const { error } = await supabase.from('fees').update({
       status: 'paid',
-      paid_date: new Date().toISOString().split('T')[0]
-    }).eq('id', id)
-    toast.success('Marked as paid'); fetchFees()
+      paid_date: new Date().toISOString().slice(0, 10),
+      receipt_number: receiptNumber((count ?? 0) + 1),
+    }).eq('id', paying.id)
+
+    setSaving(false)
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Payment recorded')
+    setPaying(null)
+    fetchFees(); fetchTotals()
   }
 
-  const filtered = fees.filter(f => {
-    const matchSearch = (f.student_name ?? '').toLowerCase().includes(search.toLowerCase())
-    return matchSearch && (statusFilter === 'all' || f.status === statusFilter)
-  })
-
-  const totalCollected = fees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0)
-  const totalPending   = fees.filter(f => f.status !== 'paid').reduce((s, f) => s + f.amount, 0)
-  const overdueCount   = fees.filter(f => f.status === 'overdue').length
-
-  const statusBadge: Record<string, string> = {
-    paid:    'bg-emerald-100 text-emerald-700 border border-emerald-200',
-    pending: 'bg-amber-100 text-amber-700 border border-amber-200',
-    overdue: 'bg-red-100 text-red-700 border border-red-200',
+  async function handleDelete() {
+    if (!deleting) return
+    const { error } = await supabase.from('fees').delete().eq('id', deleting.id)
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Fee record deleted')
+    setDeleting(null)
+    fetchFees(); fetchTotals()
   }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1e3a5f] to-[#2d5a8e] flex items-center justify-center shadow-lg">
-            <CreditCard className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Fee Management</h2>
-            <p className="text-sm text-gray-500">Track and manage student fees</p>
-          </div>
-        </div>
-        <button onClick={() => setShowModal(true)}
-          className="btn-gradient flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white shadow-md">
-          <Plus className="w-4 h-4" /> Add Fee Record
-        </button>
+      <PageHeader
+        icon={CreditCard}
+        title="Fees"
+        subtitle={`${total} record${total === 1 ? '' : 's'}`}
+        actions={
+          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }} className="btn btn-brass">
+            <Plus className="h-4 w-4" /> Raise fee
+          </button>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard label="Collected" value={formatCurrency(totals.collected)} icon={CheckCircle} tone="green" />
+        <StatCard label="Pending"   value={formatCurrency(totals.pending)}   icon={Wallet} tone="brass" />
+        <StatCard
+          label="Overdue"
+          value={formatCurrency(totals.overdue)}
+          hint={`${totals.overdueCount} record${totals.overdueCount === 1 ? '' : 's'}`}
+          icon={AlertCircle}
+          tone={totals.overdueCount ? 'red' : 'slate'}
+        />
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: 'Total Collected', value: formatCurrency(totalCollected), gradient: 'from-emerald-500 to-teal-500',  Icon: CheckCircle,  iconBg: 'bg-emerald-50', iconText: 'text-emerald-600', valText: 'text-emerald-700' },
-          { label: 'Pending Amount',  value: formatCurrency(totalPending),   gradient: 'from-amber-500 to-yellow-400', Icon: TrendingUp,    iconBg: 'bg-amber-50',   iconText: 'text-amber-600',   valText: 'text-amber-700' },
-          { label: 'Overdue Records', value: String(overdueCount),           gradient: 'from-red-500 to-rose-500',     Icon: AlertCircle,   iconBg: 'bg-red-50',     iconText: 'text-red-600',     valText: 'text-red-700' },
-        ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className={`h-1.5 bg-gradient-to-r ${s.gradient}`} />
-            <div className="p-5 flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${s.iconBg} flex items-center justify-center flex-shrink-0`}>
-                <s.Icon className={`w-6 h-6 ${s.iconText}`} />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 font-medium">{s.label}</p>
-                <p className={`text-xl font-bold ${s.valText} mt-0.5`}>{s.value}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex gap-3">
+      <Toolbar>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search by student name..."
-            className="input pl-9 rounded-xl border-gray-200 w-full" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="input pl-9" placeholder="Search by student name or admission number…"
+            aria-label="Search fees"
+          />
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="input w-36 rounded-xl border-gray-200">
-          <option value="all">All Status</option>
+        <select
+          value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(0) }}
+          className="input sm:w-40" aria-label="Filter by status"
+        >
+          <option value="all">All status</option>
           <option value="paid">Paid</option>
           <option value="pending">Pending</option>
           <option value="overdue">Overdue</option>
         </select>
-      </div>
+      </Toolbar>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100">
-                {['Student', 'Class', 'Fee Type', 'Amount', 'Due Date', 'Paid Date', 'Status', 'Action'].map(h => (
-                  <th key={h} className="table-header">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <tr key={i}><td colSpan={8} className="px-4 py-3"><div className="h-4 bg-gray-100 rounded animate-pulse" /></td></tr>
-                ))
-              ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="text-center py-14">
-                    <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-3">
-                      <CreditCard className="w-7 h-7 text-gray-300" />
-                    </div>
-                    <p className="text-gray-400 text-sm font-medium">No fee records found</p>
-                  </td>
-                </tr>
-              ) : filtered.map(f => (
-                <tr key={f.id} className="hover:bg-blue-50/30 transition-colors group">
-                  <td className="table-cell font-medium text-gray-900">{f.student_name}</td>
-                  <td className="table-cell text-gray-500">{f.class_name}</td>
-                  <td className="table-cell">
-                    <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium border border-blue-100">
-                      {f.fee_type}
-                    </span>
-                  </td>
-                  <td className="table-cell font-bold text-gray-900">{formatCurrency(f.amount)}</td>
-                  <td className="table-cell text-gray-500">{formatDate(f.due_date)}</td>
-                  <td className="table-cell text-gray-500">{f.paid_date ? formatDate(f.paid_date) : '—'}</td>
-                  <td className="table-cell">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                      statusBadge[f.status] ?? 'bg-gray-100 text-gray-600'
-                    }`}>{f.status}</span>
-                  </td>
-                  <td className="table-cell">
-                    {f.status !== 'paid' && (
-                      <button onClick={() => markPaid(f.id)}
-                        className="flex items-center gap-1 text-xs text-emerald-600 hover:bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors font-semibold">
-                        <CheckCircle className="w-3 h-3" /> Mark Paid
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-[#1e3a5f] to-[#2d5a8e] p-6">
-              <h3 className="font-bold text-white text-lg">Add Fee Record</h3>
-              <p className="text-blue-200 text-sm mt-0.5">Enter fee details for the student</p>
-            </div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">Student</label>
-                <select value={form.student_id} onChange={e => setForm(p => ({ ...p, student_id: e.target.value }))}
-                  className="input rounded-xl border-gray-200 w-full">
-                  <option value="">Select student</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.full_name} ({s.admission_number})</option>)}
-                </select>
-              </div>
-              {([
-                { l: 'Fee Type', k: 'fee_type', t: 'text' },
-                { l: 'Amount (₹)', k: 'amount', t: 'number' },
-                { l: 'Due Date', k: 'due_date', t: 'date' },
-              ] as { l: string; k: string; t: string }[]).map(f => (
-                <div key={f.k}>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">{f.l}</label>
-                  <input type={f.t} value={(form as any)[f.k]}
-                    onChange={e => setForm(p => ({ ...p, [f.k]: e.target.value }))}
-                    className="input rounded-xl border-gray-200 w-full" />
+      <TableShell
+        columns={['Student', 'Class', 'Type', 'Amount', 'Due', 'Paid', 'Status', 'Actions']}
+        footer={<Pagination page={page} pageSize={PAGE_SIZE} total={total} onPage={setPage} />}
+      >
+        {loading ? (
+          <SkeletonRows cols={8} />
+        ) : rows.length === 0 ? (
+          <EmptyState icon={CreditCard} title="No fee records" hint="Raise a fee to start tracking collections." colSpan={8} />
+        ) : rows.map(f => {
+          const style = STATUS_STYLE[f.status] ?? STATUS_STYLE.pending
+          return (
+            <tr key={f.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
+              <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>
+                {f.students?.full_name ?? '—'}
+                <span className="ml-1.5 font-mono text-[11px] font-normal" style={{ color: 'var(--ink-faint)' }}>
+                  {f.students?.admission_number}
+                </span>
+              </td>
+              <td className="table-cell">{f.students?.classes?.name ?? '—'}</td>
+              <td className="table-cell">
+                <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}>{f.fee_type}</span>
+              </td>
+              <td className="table-cell font-bold tabular-nums" style={{ color: 'var(--ink)' }}>
+                {formatCurrency(Number(f.amount))}
+              </td>
+              <td className="table-cell">{formatDate(f.due_date)}</td>
+              <td className="table-cell">{f.paid_date ? formatDate(f.paid_date) : '—'}</td>
+              <td className="table-cell">
+                <span className="badge" style={{ background: style.bg, color: style.fg }}>{f.status}</span>
+              </td>
+              <td className="table-cell">
+                <div className="flex items-center gap-1.5">
+                  {f.status !== 'paid' ? (
+                    <button onClick={() => setPaying(f)} className="btn btn-ghost btn-sm">
+                      <CheckCircle className="h-3.5 w-3.5" style={{ color: '#2f7d5b' }} /> Record payment
+                    </button>
+                  ) : (
+                    <Link href={`/receipts/${f.id}`} className="btn btn-ghost btn-sm">
+                      <Receipt className="h-3.5 w-3.5" /> Receipt
+                    </Link>
+                  )}
+                  <button onClick={() => setDeleting(f)} className="btn btn-ghost btn-icon" aria-label="Delete fee record">
+                    <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                  </button>
                 </div>
+              </td>
+            </tr>
+          )
+        })}
+      </TableShell>
+
+      {/* ── Raise fee ─────────────────────────────────── */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Raise a fee"
+        subtitle="This creates a payable record against the student"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={handleAdd} disabled={saving}>
+              {saving ? 'Saving…' : 'Raise fee'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="student_id" className="label">Student</label>
+            <select
+              id="student_id" value={form.student_id} onChange={e => set('student_id', e.target.value)}
+              aria-invalid={!!errors.student_id}
+              className={`input ${errors.student_id ? 'input-error' : ''}`}
+            >
+              <option value="">Select a student…</option>
+              {students.map(s => (
+                <option key={s.id} value={s.id}>{s.full_name} ({s.admission_number})</option>
               ))}
+            </select>
+            {errors.student_id && <p className="field-error">{errors.student_id}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="fee_type" className="label">Fee type</label>
+            <select
+              id="fee_type" value={form.fee_type} onChange={e => set('fee_type', e.target.value)}
+              aria-invalid={!!errors.fee_type}
+              className={`input ${errors.fee_type ? 'input-error' : ''}`}
+            >
+              <option value="">Select a type…</option>
+              {FEE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            {errors.fee_type && <p className="field-error">{errors.fee_type}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="amount" className="label">Amount (₹)</label>
+              <input
+                id="amount" type="number" min="1" step="1" value={form.amount}
+                onChange={e => set('amount', e.target.value)}
+                aria-invalid={!!errors.amount}
+                className={`input ${errors.amount ? 'input-error' : ''}`}
+              />
+              {errors.amount && <p className="field-error">{errors.amount}</p>}
             </div>
-            <div className="px-6 pb-6 flex justify-end gap-3 border-t border-gray-50 pt-4">
-              <button onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleAdd}
-                className="btn-gradient px-5 py-2 rounded-xl text-white text-sm font-semibold shadow-md">
-                Add Record
-              </button>
+            <div>
+              <label htmlFor="due_date" className="label">Due date</label>
+              <input
+                id="due_date" type="date" value={form.due_date}
+                onChange={e => set('due_date', e.target.value)}
+                aria-invalid={!!errors.due_date}
+                className={`input ${errors.due_date ? 'input-error' : ''}`}
+              />
+              {errors.due_date && <p className="field-error">{errors.due_date}</p>}
             </div>
           </div>
         </div>
-      )}
+      </Modal>
+
+      {/* ── Record payment ────────────────────────────── */}
+      <Modal
+        open={!!paying}
+        onClose={() => setPaying(null)}
+        title="Record payment"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setPaying(null)}>Cancel</button>
+            <button className="btn btn-primary" onClick={recordPayment} disabled={saving}>
+              {saving ? 'Recording…' : 'Confirm payment'}
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Marking <strong>{formatCurrency(Number(paying?.amount ?? 0))}</strong> ({paying?.fee_type}) as
+          paid for <strong>{paying?.students?.full_name}</strong>.
+        </p>
+        <p className="mt-3 text-sm" style={{ color: 'var(--ink-faint)' }}>
+          A receipt number is issued automatically and the receipt becomes printable.
+        </p>
+      </Modal>
+
+      {/* ── Delete ────────────────────────────────────── */}
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Delete fee record"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setDeleting(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={handleDelete}>Delete</button>
+          </>
+        }
+      >
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Delete the {deleting?.fee_type} fee of {formatCurrency(Number(deleting?.amount ?? 0))} for{' '}
+          <strong>{deleting?.students?.full_name}</strong>?
+          {deleting?.status === 'paid' && ' This record has already been receipted.'}
+        </p>
+      </Modal>
     </div>
   )
 }

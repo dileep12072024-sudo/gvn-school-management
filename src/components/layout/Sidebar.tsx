@@ -5,113 +5,136 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, Users, GraduationCap, BookOpen, ClipboardCheck,
   CreditCard, FileText, Calendar, Clock, Megaphone, Bus, MessageSquare,
-  CalendarDays, FolderOpen, Settings, X,
+  CalendarDays, FolderOpen, Settings, X, Baby,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { UserRole } from '@/types'
+import { NAV, NAV_GROUPS, type UserRole } from '@/lib/nav'
 
-const allNavItems = [
-  { href: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard',       roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/students',   icon: Users,           label: 'Students',        roles: ['organiser','principal','vice_principal','teacher'] },
-  { href: '/teachers',   icon: GraduationCap,   label: 'Teachers',        roles: ['organiser','principal','vice_principal'] },
-  { href: '/classes',    icon: BookOpen,        label: 'Classes',         roles: ['organiser','principal','vice_principal','teacher'] },
-  { href: '/attendance', icon: ClipboardCheck,  label: 'Attendance',      roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/fees',       icon: CreditCard,      label: 'Fees',            roles: ['organiser','principal','vice_principal','parent'] },
-  { href: '/exams',      icon: FileText,        label: 'Exams & Results', roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/timetable',  icon: Clock,           label: 'Timetable',       roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/notices',    icon: Megaphone,       label: 'Notices',         roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/transport',  icon: Bus,             label: 'Transport',       roles: ['organiser','principal','vice_principal','parent'] },
-  { href: '/calendar',   icon: CalendarDays,    label: 'Calendar',        roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/messages',   icon: MessageSquare,   label: 'Messages',        roles: ['organiser','principal','vice_principal','teacher','parent'] },
-  { href: '/leave',      icon: Calendar,        label: 'Leave',           roles: ['organiser','principal','vice_principal','teacher'] },
-  { href: '/documents',  icon: FolderOpen,      label: 'Documents',       roles: ['organiser','principal','vice_principal','teacher','parent','student'] },
-  { href: '/settings',   icon: Settings,        label: 'Settings',        roles: ['organiser','principal','vice_principal'] },
-]
-
-interface SidebarProps {
-  role: UserRole
-  onClose?: () => void
+// Icons live here, not in nav.ts — that file is imported by edge middleware.
+const ICONS: Record<string, typeof Users> = {
+  '/dashboard': LayoutDashboard,
+  '/portal': Baby,
+  '/attendance': ClipboardCheck,
+  '/exams': FileText,
+  '/timetable': Clock,
+  '/classes': BookOpen,
+  '/students': Users,
+  '/teachers': GraduationCap,
+  '/leave': Calendar,
+  '/fees': CreditCard,
+  '/transport': Bus,
+  '/documents': FolderOpen,
+  '/notices': Megaphone,
+  '/calendar': CalendarDays,
+  '/messages': MessageSquare,
+  '/settings': Settings,
 }
 
-export default function Sidebar({ role, onClose }: SidebarProps) {
-  const pathname  = usePathname()
-  const navItems  = allNavItems.filter(item => item.roles.includes(role))
+export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: () => void }) {
+  const pathname = usePathname()
+  const visible = NAV.filter(i => !i.hidden && i.roles.includes(role))
 
   const handleNavClick = () => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      onClose?.()
-    }
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) onClose?.()
   }
 
   return (
     <aside
-      className="w-60 flex flex-col h-full shrink-0"
-      style={{ background: 'linear-gradient(180deg, #0d2038 0%, #1a3356 45%, #142540 100%)' }}
+      className="flex h-full w-64 shrink-0 flex-col"
+      style={{
+        background: 'linear-gradient(180deg, #16304e 0%, #0f2138 55%, #0a1828 100%)',
+        boxShadow: 'inset -1px 0 0 rgba(255,255,255,.06), 4px 0 24px rgba(10,24,40,.28)',
+      }}
     >
-      {/* ── Logo ────────────────────────────────────── */}
-      <div className="p-5 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
-          >
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-sm leading-tight">GVN School</p>
-            <p className="text-blue-300/70 text-xs">Visakhapatnam</p>
-          </div>
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-blue-300 hover:text-white transition-colors shrink-0"
-              aria-label="Close sidebar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+      {/* Brass hairline along the top edge */}
+      <div className="h-px shrink-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(217,169,78,.6), transparent)' }} />
+
+      {/* ── Crest ─────────────────────────────────────── */}
+      <div className="flex items-center gap-3 p-5" style={{ borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+        <div
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)]"
+          style={{
+            background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 55%, var(--brass-deep))',
+            boxShadow: '0 2px 0 var(--brass-deep), 0 4px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.4)',
+          }}
+        >
+          <GraduationCap className="h-5 w-5 text-white" />
         </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold leading-tight text-white">GVN School</p>
+          <p className="truncate text-xs text-white/40">Visakhapatnam</p>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close sidebar"
+            className="shrink-0 rounded-[var(--radius-sm)] p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* ── Navigation ──────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto scrollbar-hide py-4 px-2.5 space-y-0.5">
-        {navItems.map(item => {
-          const active = pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href))
+      {/* ── Navigation ────────────────────────────────── */}
+      <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
+        {NAV_GROUPS.map(group => {
+          const items = visible.filter(i => i.group === group)
+          if (!items.length) return null
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={handleNavClick}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                active
-                  ? 'text-white'
-                  : 'text-blue-200/65 hover:bg-white/10 hover:text-white',
-              )}
-              style={active ? {
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                boxShadow: '0 4px 16px rgba(245, 158, 11, 0.35)',
-              } : undefined}
-            >
-              <item.icon className={cn(
-                'w-4 h-4 shrink-0 transition-colors',
-                active ? 'text-white' : 'text-blue-300/55',
-              )} />
-              <span className="truncate">{item.label}</span>
-            </Link>
+            <div key={group} className="mb-5 last:mb-0">
+              <p className="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[.16em] text-white/25">
+                {group}
+              </p>
+              <div className="space-y-0.5">
+                {items.map(item => {
+                  const Icon = ICONS[item.href] ?? FileText
+                  const active = pathname === item.href || pathname.startsWith(item.href + '/')
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={handleNavClick}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'group relative flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-all duration-200',
+                        active ? 'text-white' : 'text-white/50 hover:bg-white/[.07] hover:text-white/90',
+                      )}
+                      style={active ? {
+                        background: 'linear-gradient(180deg, rgba(217,169,78,.22), rgba(184,135,59,.12))',
+                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.14), 0 1px 3px rgba(0,0,0,.3)',
+                      } : undefined}
+                    >
+                      {/* Brass tab on the active item */}
+                      {active && (
+                        <span
+                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full"
+                          style={{ background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))' }}
+                        />
+                      )}
+                      <Icon
+                        className={cn('h-4 w-4 shrink-0 transition-colors', !active && 'text-white/35 group-hover:text-white/70')}
+                        style={active ? { color: 'var(--brass-lift)' } : undefined}
+                      />
+                      <span className="truncate">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </nav>
 
-      {/* ── Footer ──────────────────────────────────── */}
-      <div className="p-3 border-t border-white/10">
+      {/* ── Footer plate ──────────────────────────────── */}
+      <div className="p-3" style={{ borderTop: '1px solid rgba(255,255,255,.07)' }}>
         <div
-          className="px-3 py-2.5 rounded-xl text-center"
-          style={{ background: 'rgba(255,255,255,0.05)' }}
+          className="rounded-[var(--radius-sm)] px-3 py-2.5 text-center"
+          style={{ background: 'rgba(0,0,0,.22)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,.4)' }}
         >
-          <p className="text-blue-300/65 text-xs font-medium">Geethanjali Vidya Nilayam</p>
-          <p className="text-blue-400/45 text-xs mt-0.5">Est. 1995 · Vizag</p>
+          <p className="text-[11px] font-semibold text-white/45">Geethanjali Vidya Nilayam</p>
+          <p className="mt-0.5 text-[10px] text-white/25">Est. 1995 · Vizag</p>
         </div>
       </div>
     </aside>

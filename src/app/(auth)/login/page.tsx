@@ -1,226 +1,247 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { GraduationCap, Eye, EyeOff, Lock, Mail, Users, ClipboardCheck, BookOpen, Calendar } from 'lucide-react'
+import { useState, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { GraduationCap, Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import { validate, required, email as emailRule } from '@/lib/utils'
+import Tilt3D from '@/components/ui/Tilt3D'
 
-const DEMO_ACCOUNTS = [
-  { role: 'Organiser',      email: 'organiser@gvn.edu.in',  password: 'GVN@2024!' },
-  { role: 'Principal',      email: 'principal@gvn.edu.in',  password: 'GVN@2024!' },
-  { role: 'Vice Principal', email: 'vp@gvn.edu.in',         password: 'GVN@2024!' },
-  { role: 'Teacher',        email: 'teacher@gvn.edu.in',    password: 'GVN@2024!' },
-  { role: 'Parent',         email: 'parent@gvn.edu.in',     password: 'GVN@2024!' },
+const PILLARS = [
+  { label: 'Attendance & academics', desc: 'Daily registers, exam results, report cards' },
+  { label: 'Fees & receipts',        desc: 'Collections, dues, printable receipts' },
+  { label: 'Timetable & transport',  desc: 'Period grids, routes and vehicle allocation' },
 ]
 
-const FEATURES = [
-  { icon: Users,         label: 'Students & Attendance', desc: 'Track daily attendance & academic progress' },
-  { icon: ClipboardCheck,label: 'Fees & Exams',          desc: 'Manage payments & exam results' },
-  { icon: BookOpen,      label: 'Timetable & Transport', desc: 'Schedule classes & manage routes' },
-  { icon: Calendar,      label: 'Notices & Events',      desc: 'Stay updated with school news' },
-]
-
-export default function LoginPage() {
-  const [email, setEmail]             = useState('')
-  const [password, setPassword]       = useState('')
+function LoginForm() {
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading]         = useState(false)
+  const [loading, setLoading] = useState(false)
+
   const router = useRouter()
+  const params = useSearchParams()
+  const supabase = useMemo(() => createClient(), [])
+  const next = params.get('next')
+
+  const set = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errs = validate(form, {
+      email:    [required('Email'), emailRule],
+      password: [required('Password')],
+    })
+    if (Object.keys(errs).length) { setErrors(errs); return }
+
     setLoading(true)
-    try {
-      const res  = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Invalid credentials')
-      } else {
-        toast.success('Welcome back!')
-        router.push('/dashboard')
-        router.refresh()
-      }
-    } catch {
-      toast.error('Network error. Please try again.')
-    } finally {
-      setLoading(false)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: form.email.trim(),
+      password: form.password,
+    })
+    setLoading(false)
+
+    if (error) {
+      // Don't leak which half was wrong.
+      toast.error(
+        error.message === 'Email not confirmed'
+          ? 'Please confirm your email address first'
+          : 'Incorrect email or password',
+      )
+      return
     }
+
+    toast.success('Welcome back')
+    router.replace(next && next.startsWith('/') ? next : '/dashboard')
+    router.refresh()
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 bg-animated-gradient">
-
-      {/* Subtle grid overlay */}
-      <div className="absolute inset-0 bg-grid-pattern" />
-
-      {/* Floating ambient orbs */}
-      <div className="absolute top-12 left-12 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-float pointer-events-none" />
-      <div className="absolute bottom-12 right-12 w-96 h-96 bg-gold-500/15 rounded-full blur-3xl animate-float-delayed pointer-events-none" />
-      <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+    <div
+      className="relative flex min-h-screen items-center justify-center overflow-hidden p-4"
+      style={{ background: 'linear-gradient(160deg, #0f2138 0%, #1e3a5f 45%, #14283f 100%)' }}
+    >
+      {/* Engraved guilloché ground — classic banknote feel, pure CSS */}
       <div
-        className="absolute bottom-1/3 left-1/5 w-52 h-52 bg-purple-500/10 rounded-full blur-3xl animate-float pointer-events-none"
-        style={{ animationDelay: '3s' }}
+        className="pointer-events-none absolute inset-0 opacity-[.16]"
+        style={{
+          backgroundImage:
+            'repeating-linear-gradient(45deg, rgba(255,255,255,.5) 0 1px, transparent 1px 14px),' +
+            'repeating-linear-gradient(-45deg, rgba(255,255,255,.35) 0 1px, transparent 1px 14px)',
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(184,135,59,.22), transparent 62%)' }}
       />
 
-      {/* Floating geometric accents */}
-      <div className="absolute top-24 right-1/4 w-8 h-8 border-2 border-white/10 rounded-lg rotate-45 animate-float-slow pointer-events-none" />
-      <div
-        className="absolute bottom-28 left-1/3 w-5 h-5 border-2 border-gold-400/20 rounded-full animate-float pointer-events-none"
-        style={{ animationDelay: '1.5s' }}
-      />
-      <div className="absolute top-1/3 right-24 w-3 h-3 bg-white/8 rounded animate-float-delayed pointer-events-none" />
+      <Tilt3D
+        max={4}
+        sheen={false}
+        className="relative grid w-full max-w-5xl grid-cols-1 overflow-hidden rounded-[var(--radius-lg)] lg:grid-cols-[1.05fr_1fr]"
+        style={{
+          border: '1px solid rgba(255,255,255,.14)',
+          boxShadow: '0 40px 80px -30px rgba(0,0,0,.7), 0 12px 28px rgba(0,0,0,.35)',
+        }}
+      >
+        {/* ── Left: brass plate ─────────────────────────── */}
+        <div
+          className="relative hidden flex-col justify-between p-10 text-white lg:flex"
+          style={{ background: 'linear-gradient(165deg, #16304e 0%, #0f2138 60%, #0a1828 100%)' }}
+        >
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-px"
+            style={{ background: 'linear-gradient(90deg, transparent, rgba(217,169,78,.7), transparent)' }}
+          />
 
-      {/* Card container */}
-      <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-3xl overflow-hidden shadow-2xl animate-slide-up">
-
-        {/* ── Left Panel: glassmorphism dark ───────────────── */}
-        <div className="hidden lg:flex flex-col justify-between glass-dark p-10 text-white relative overflow-hidden">
-          {/* Inner ambient glows */}
-          <div className="absolute -top-8 -right-8 w-64 h-64 bg-gold-500/12 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-52 h-52 bg-blue-500/12 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Logo */}
-          <div className="flex items-center gap-4 relative z-10">
+          <div className="flex items-center gap-3.5">
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl animate-pulse-glow shrink-0"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+              className="grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)]"
+              style={{
+                background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 55%, var(--brass-deep))',
+                boxShadow: '0 3px 0 var(--brass-deep), 0 8px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.4)',
+              }}
             >
-              <GraduationCap className="w-8 h-8 text-white" />
+              <GraduationCap className="h-7 w-7 text-white" />
             </div>
             <div>
-              <p className="font-bold text-xl leading-tight text-gradient-gold">Geethanjali</p>
-              <p className="text-blue-300/80 text-sm tracking-wide">Vidya Nilayam</p>
+              <p className="text-lg font-bold leading-tight">Geethanjali Vidya Nilayam</p>
+              <p className="text-sm tracking-wide text-white/45">Peddawaltair · Visakhapatnam</p>
             </div>
           </div>
 
-          {/* Hero text */}
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-blue-200 mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="py-10">
+            <p
+              className="mb-4 inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em]"
+              style={{ background: 'rgba(217,169,78,.16)', color: 'var(--brass-lift)', border: '1px solid rgba(217,169,78,.3)' }}
+            >
               Academic Year 2024–25
-            </div>
-            <h2 className="text-4xl font-bold leading-tight mb-4">
-              School<br />
-              <span className="text-gradient-gold">Management</span><br />
-              System
-            </h2>
-            <p className="text-blue-300/80 text-sm leading-relaxed">
-              Peddawaltair, Visakhapatnam<br />
-              Andhra Pradesh · Empowering education<br />
-              through smart administration.
             </p>
+            <h1 className="text-[2.6rem] font-bold leading-[1.08] tracking-tight">
+              School<br />Management<br />
+              <span
+                style={{
+                  background: 'linear-gradient(180deg, #f0d9a0, var(--brass-lift) 45%, var(--brass-deep))',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                System
+              </span>
+            </h1>
+            <div className="mt-4 h-px w-24" style={{ background: 'linear-gradient(90deg, var(--brass), transparent)' }} />
           </div>
 
-          {/* Feature list */}
-          <div className="space-y-2.5 relative z-10">
-            {FEATURES.map(f => (
-              <div key={f.label} className="flex items-center gap-3 glass rounded-xl px-3 py-2.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.2)' }}>
-                  <f.icon className="w-4 h-4 text-gold-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white leading-tight">{f.label}</p>
-                  <p className="text-xs text-blue-300/70">{f.desc}</p>
-                </div>
+          <div className="space-y-2">
+            {PILLARS.map(p => (
+              <div
+                key={p.label}
+                className="rounded-[var(--radius-sm)] px-4 py-3"
+                style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.07)' }}
+              >
+                <p className="text-sm font-semibold">{p.label}</p>
+                <p className="text-xs text-white/45">{p.desc}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Right Panel: frosted white form ──────────────── */}
-        <div className="glass-white p-8 md:p-10 flex flex-col justify-center">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-6 lg:hidden">
+        {/* ── Right: the form ───────────────────────────── */}
+        <div className="flex flex-col justify-center p-8 md:p-10" style={{ background: 'var(--paper)' }}>
+          <div className="mb-7 flex items-center gap-3 lg:hidden">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+              className="grid h-11 w-11 place-items-center rounded-[var(--radius-sm)]"
+              style={{ background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))' }}
             >
-              <GraduationCap className="w-6 h-6 text-white" />
+              <GraduationCap className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-bold text-[#1e3a5f]">GVN School</p>
-              <p className="text-gray-400 text-xs">Management System</p>
+              <p className="font-bold" style={{ color: 'var(--navy)' }}>GVN School</p>
+              <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>Management System</p>
             </div>
           </div>
 
           <div className="mb-7">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back 👋</h1>
-            <p className="text-gray-500 text-sm mt-1">Sign in to your school account</p>
+            <h2 className="text-2xl font-bold tracking-tight rule-brass" style={{ color: 'var(--ink)' }}>
+              Sign in
+            </h2>
+            <p className="mt-3 text-sm" style={{ color: 'var(--ink-faint)' }}>
+              Use the account issued by the school office.
+            </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} noValidate className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+              <label htmlFor="email" className="label">Email address</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
                 <input
-                  type="email" required value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="input pl-10"
+                  id="email" type="email" autoComplete="email" value={form.email}
+                  onChange={e => set('email', e.target.value)}
+                  aria-invalid={!!errors.email}
+                  className={`input pl-10 ${errors.email ? 'input-error' : ''}`}
                   placeholder="you@gvn.edu.in"
                 />
               </div>
+              {errors.email && <p className="field-error">{errors.email}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label htmlFor="password" className="label">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
                 <input
-                  type={showPassword ? 'text' : 'password'} required value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input pl-10 pr-11"
-                  placeholder="Enter your password"
+                  id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+                  value={form.password} onChange={e => set('password', e.target.value)}
+                  aria-invalid={!!errors.password}
+                  className={`input pl-10 pr-11 ${errors.password ? 'input-error' : ''}`}
+                  placeholder="••••••••"
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  type="button" onClick={() => setShowPassword(s => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 transition-colors"
+                  style={{ color: 'var(--ink-faint)' }}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {errors.password && <p className="field-error">{errors.password}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-gradient flex items-center justify-center gap-2 mt-1 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {loading && (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              )}
-              {loading ? 'Signing in...' : 'Sign In'}
+            <button type="submit" disabled={loading} className="btn btn-primary mt-2 w-full">
+              {loading
+                ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Signing in…</>
+                : <>Sign in <ArrowRight className="h-4 w-4" /></>}
             </button>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 h-px bg-gray-200" />
-              <p className="text-xs text-gray-400 font-medium tracking-widest px-2">DEMO ACCOUNTS</p>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-            <div className="grid grid-cols-1 gap-1.5">
-              {DEMO_ACCOUNTS.map(acc => (
-                <button
-                  key={acc.role}
-                  onClick={() => { setEmail(acc.email); setPassword(acc.password) }}
-                  className="text-left px-3 py-2 rounded-xl bg-gray-50 hover:bg-blue-50 border border-transparent hover:border-blue-200 text-xs transition-all duration-200 group"
-                >
-                  <span className="font-semibold text-[#1e3a5f] group-hover:text-blue-700">{acc.role}:</span>
-                  <span className="text-gray-500 ml-1.5">{acc.email}</span>
-                </button>
-              ))}
-            </div>
+          <div
+            className="mt-7 flex items-start gap-2.5 rounded-[var(--radius-sm)] px-3.5 py-3"
+            style={{ background: 'var(--surface-sunk)', border: '1px solid var(--edge)', boxShadow: 'var(--sunk)' }}
+          >
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--brass)' }} />
+            <p className="text-xs leading-relaxed" style={{ color: 'var(--ink-faint)' }}>
+              Accounts are created by the school administrator. Contact the office
+              if you cannot sign in — self-registration is disabled.
+            </p>
           </div>
         </div>
-
-      </div>
+      </Tilt3D>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   )
 }

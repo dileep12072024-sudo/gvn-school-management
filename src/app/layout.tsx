@@ -1,36 +1,46 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Inter, Fraunces } from 'next/font/google'
 import './globals.css'
-import '../styles/liquid-glass.css'
 import { Toaster } from 'react-hot-toast'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
+// A classic transitional serif for headings and the printed sheets.
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-serif', display: 'swap' })
 
 export const metadata: Metadata = {
   title: {
     default: 'GVN School Management',
     template: '%s | GVN School',
   },
-  description: 'Geethanjali Vidya Nilayam — Peddawaltair, Visakhapatnam, Andhra Pradesh. Premium iOS 27 Liquid Glass UI',
-  keywords: ['school management', 'GVN', 'Geethanjali Vidya Nilayam', 'Visakhapatnam', 'liquid glass', 'iOS 27'],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=5',
+  description:
+    'Geethanjali Vidya Nilayam — Peddawaltair, Visakhapatnam, Andhra Pradesh. Students, attendance, fees, exams and transport in one place.',
+  keywords: ['school management', 'GVN', 'Geethanjali Vidya Nilayam', 'Visakhapatnam'],
+}
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0f2138',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="GVN School" />
-      </head>
+    <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
       <body className={inter.className}>
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
-            style: { borderRadius: '12px', fontSize: '14px' },
-            success: { iconTheme: { primary: '#1e3a5f', secondary: '#fff' } },
+            style: {
+              borderRadius: '10px',
+              fontSize: '14px',
+              background: '#fffefb',
+              color: '#16202e',
+              border: '1px solid #ded7c9',
+              boxShadow: '0 10px 24px rgba(22,32,46,.12), 0 2px 4px rgba(22,32,46,.07)',
+            },
+            success: { iconTheme: { primary: '#2f7d5b', secondary: '#fff' } },
+            error: { iconTheme: { primary: '#b8443c', secondary: '#fff' } },
           }}
         />
         {children}

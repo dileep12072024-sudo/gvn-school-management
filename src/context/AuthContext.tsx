@@ -1,13 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback } from 'react'
-import type { MockProfile } from '@/lib/mock-auth'
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient, type Profile } from '@/lib/supabase'
 
 interface AuthContextType {
-  user: MockProfile | null
-  profile: MockProfile | null
+  profile: Profile | null
+  /** Alias kept so existing callers reading `user` keep working. */
+  user: Profile | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -19,34 +20,49 @@ export function AuthProvider({
   initialProfile,
 }: {
   children: React.ReactNode
-  initialProfile?: MockProfile | null
+  initialProfile: Profile | null
 }) {
-  const [profile, setProfile] = useState<MockProfile | null>(initialProfile ?? null)
-  const [loading] = useState(false)
+  const [profile, setProfile] = useState<Profile | null>(initialProfile)
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+  // Server already resolved the profile; this only catches sign-out or a token
+  // refresh happening in another tab.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        setProfile(null)
+        router.replace('/login')
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        router.refresh()
+      }
     })
-    const data = await res.json()
-    if (!res.ok) return { error: data.error || 'Invalid credentials' }
-    setProfile(data.profile)
-    return { error: null }
-  }, [])
-
-  const signOut = useCallback(async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    setProfile(null)
-  }, [])
+    return () => subscription.unsubscribe()
+  }, [supabase, router])
 
   const refreshProfile = useCallback(async () => {
-    // No-op for mock auth — profile is stable from cookie
-  }, [])
+    setLoading(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setProfile(null); setLoading(false); return }
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, email, full_name, role, phone, avatar_url')
+      .eq('id', user.id)
+      .single()
+    setProfile((data as Profile) ?? null)
+    setLoading(false)
+  }, [supabase])
+
+  const signOut = useCallback(async () => {
+    await supabase.auth.signOut()
+    setProfile(null)
+    router.replace('/login')
+    router.refresh()
+  }, [supabase, router])
 
   return (
-    <AuthContext.Provider value={{ user: profile, profile, loading, signIn, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ profile, user: profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

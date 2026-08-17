@@ -1,287 +1,339 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Users, GraduationCap, ClipboardCheck, CreditCard, TrendingUp, ArrowUpRight, Megaphone } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { formatCurrency } from '@/lib/utils'
+import { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
+import {
+  Users, GraduationCap, ClipboardCheck, CreditCard, Megaphone,
+  AlertTriangle, CalendarDays, ArrowRight,
+} from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, PieChart, Pie, Cell,
+} from 'recharts'
+import { format, subDays, isWeekend } from 'date-fns'
+import { createClient } from '@/lib/supabase'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import { PageHeader, StatCard, EmptyState } from '@/components/ui'
 
-const PIE_COLORS = ['#1e3a5f', '#f59e0b', '#ef4444']
+const CHART = { navy: '#1e3a5f', brass: '#b8873b', red: '#b8443c', green: '#2f7d5b', slate: '#8494a8' }
 
-const MOCK_NOTICES = [
-  { id: '1', title: 'Annual Day Celebration',  content: 'Annual day will be held on 15th July 2024 at 5:00 PM in the school auditorium. All students must be present.', priority: 'high',   created_at: new Date(Date.now() - 86400000).toISOString() },
-  { id: '2', title: 'Parent-Teacher Meeting',  content: 'PTM for Classes VI–X scheduled for 28th June 2024. All parents are requested to attend.', priority: 'medium', created_at: new Date(Date.now() - 2 * 86400000).toISOString() },
-  { id: '3', title: 'Sports Day Preparations', content: 'Inter-house sports day on 5th July. Practice sessions begin Monday at 8 AM sharp.',             priority: 'low',    created_at: new Date(Date.now() - 3 * 86400000).toISOString() },
-]
+/** The last 5 working days, oldest first. */
+function recentSchoolDays(n = 5): string[] {
+  const days: string[] = []
+  for (let i = 0; days.length < n && i < 14; i++) {
+    const d = subDays(new Date(), i)
+    if (!isWeekend(d)) days.unshift(format(d, 'yyyy-MM-dd'))
+  }
+  return days
+}
+
+interface Stats {
+  students: number
+  teachers: number
+  attendancePct: number | null
+  collected: number
+  outstanding: number
+  overdueCount: number
+}
 
 export default function DashboardPage() {
-  const [stats,   setStats]   = useState({ students: 234, teachers: 18, attendance: 92, fees: 485000 })
-  const [notices, setNotices] = useState<any[]>(MOCK_NOTICES)
-  const [loading]             = useState(false)
+  const { profile } = useAuth()
+  const supabase = useMemo(() => createClient(), [])
+
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [notices, setNotices] = useState<any[]>([])
+  const [events, setEvents] = useState<any[]>([])
+  const [week, setWeek] = useState<{ day: string; present: number; absent: number }[]>([])
+  const [feeSplit, setFeeSplit] = useState<{ name: string; value: number; color: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+    const today = format(new Date(), 'yyyy-MM-dd')
+    const days = recentSchoolDays()
+
     async function load() {
-      try {
-        const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
-        const supabase = createClientComponentClient()
-        const [studentsRes, teachersRes, noticesRes] = await Promise.all([
-          supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-          supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-          supabase.from('notices').select('*').order('created_at', { ascending: false }).limit(5),
-        ])
-        if (!studentsRes.error && studentsRes.count !== null) setStats(s => ({ ...s, students: studentsRes.count! }))
-        if (!teachersRes.error && teachersRes.count !== null) setStats(s => ({ ...s, teachers: teachersRes.count! }))
-        if (!noticesRes.error && noticesRes.data?.length) setNotices(noticesRes.data)
-      } catch {
-        // Supabase not configured — showing demo data
+      const [
+        studentsRes, teachersRes, todayAttRes, feesRes, noticesRes, eventsRes, weekAttRes,
+      ] = await Promise.all([
+        supabase.from('students').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('teachers').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('attendance').select('status').eq('date', today),
+        supabase.from('fees').select('amount, status'),
+        supabase.from('notices').select('id, title, content, priority, created_at')
+          .order('pinned', { ascending: false })
+          .order('created_at', { ascending: false }).limit(5),
+        supabase.from('calendar_events').select('id, title, event_date, event_type')
+          .gte('event_date', today).order('event_date').limit(5),
+        supabase.from('attendance').select('date, status').in('date', days),
+      ])
+
+      if (cancelled) return
+
+      const firstError = [studentsRes, teachersRes, todayAttRes, feesRes].find(r => r.error)?.error
+      if (firstError) {
+        setError(firstError.message)
+        setLoading(false)
+        return
       }
+
+      // Today's attendance rate
+      const todayRows = todayAttRes.data ?? []
+      const present = todayRows.filter((r: any) => r.status === 'present' || r.status === 'late').length
+      const attendancePct = todayRows.length
+        ? Math.round((present / todayRows.length) * 100)
+        : null
+
+      // Fees
+      const fees = (feesRes.data ?? []) as { amount: number; status: string }[]
+      const sum = (s: string) => fees.filter(f => f.status === s).reduce((a, f) => a + Number(f.amount || 0), 0)
+      const paid = sum('paid'), pending = sum('pending'), overdue = sum('overdue')
+      const total = paid + pending + overdue
+
+      setStats({
+        students: studentsRes.count ?? 0,
+        teachers: teachersRes.count ?? 0,
+        attendancePct,
+        collected: paid,
+        outstanding: pending + overdue,
+        overdueCount: fees.filter(f => f.status === 'overdue').length,
+      })
+
+      setFeeSplit(total === 0 ? [] : [
+        { name: 'Paid',    value: Math.round((paid / total) * 100),    color: CHART.green },
+        { name: 'Pending', value: Math.round((pending / total) * 100), color: CHART.brass },
+        { name: 'Overdue', value: Math.round((overdue / total) * 100), color: CHART.red },
+      ])
+
+      // Weekly attendance
+      const byDay = new Map<string, { present: number; absent: number }>()
+      days.forEach(d => byDay.set(d, { present: 0, absent: 0 }))
+      ;((weekAttRes.data ?? []) as any[]).forEach(r => {
+        const bucket = byDay.get(r.date)
+        if (!bucket) return
+        if (r.status === 'present' || r.status === 'late') bucket.present++
+        else bucket.absent++
+      })
+      setWeek(days.map(d => ({
+        day: format(new Date(d + 'T00:00:00'), 'EEE'),
+        ...byDay.get(d)!,
+      })))
+
+      setNotices(noticesRes.data ?? [])
+      setEvents(eventsRes.data ?? [])
+      setLoading(false)
     }
+
     load()
-  }, [])
-
-  const statCards = [
-    {
-      label: 'Total Students',
-      value: stats.students,
-      icon: Users,
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600',
-      gradient: 'from-blue-500 to-blue-700',
-      trend: '+12 this term',
-    },
-    {
-      label: 'Total Teachers',
-      value: stats.teachers,
-      icon: GraduationCap,
-      iconBg: 'bg-amber-100',
-      iconColor: 'text-amber-600',
-      gradient: 'from-amber-400 to-orange-500',
-      trend: '+2 this year',
-    },
-    {
-      label: "Today's Attendance",
-      value: `${stats.attendance}%`,
-      icon: ClipboardCheck,
-      iconBg: 'bg-emerald-100',
-      iconColor: 'text-emerald-600',
-      gradient: 'from-emerald-400 to-teal-500',
-      trend: '+3% vs last week',
-    },
-    {
-      label: 'Fees Collected',
-      value: formatCurrency(stats.fees),
-      icon: CreditCard,
-      iconBg: 'bg-purple-100',
-      iconColor: 'text-purple-600',
-      gradient: 'from-purple-500 to-violet-600',
-      trend: '68% of annual target',
-    },
-  ]
-
-  const attendanceData = [
-    { day: 'Mon', present: 92, absent: 8 },
-    { day: 'Tue', present: 88, absent: 12 },
-    { day: 'Wed', present: 95, absent: 5 },
-    { day: 'Thu', present: 90, absent: 10 },
-    { day: 'Fri', present: 87, absent: 13 },
-  ]
-
-  const feeData = [
-    { name: 'Paid',    value: 68 },
-    { name: 'Pending', value: 22 },
-    { name: 'Overdue', value: 10 },
-  ]
-
-  const priorityCfg: Record<string, { pill: string; bar: string; dot: string }> = {
-    urgent: { pill: 'bg-red-100 text-red-700',    bar: 'border-l-red-500',    dot: 'bg-red-500' },
-    high:   { pill: 'bg-orange-100 text-orange-700', bar: 'border-l-orange-400', dot: 'bg-orange-500' },
-    medium: { pill: 'bg-blue-100 text-blue-700',  bar: 'border-l-blue-400',   dot: 'bg-blue-500' },
-    low:    { pill: 'bg-gray-100 text-gray-600',  bar: 'border-l-gray-300',   dot: 'bg-gray-400' },
-  }
+    return () => { cancelled = true }
+  }, [supabase])
 
   const tooltipStyle = {
-    borderRadius: '12px',
-    border: 'none',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.10)',
+    borderRadius: '10px',
+    border: '1px solid #ded7c9',
+    background: '#fffefb',
+    boxShadow: '0 10px 24px rgba(22,32,46,.12)',
     fontSize: '12px',
   }
 
+  const priorityTone: Record<string, string> = {
+    urgent: CHART.red, high: CHART.brass, medium: CHART.navy, low: CHART.slate,
+  }
+
+  const firstName = profile?.full_name?.split(' ').slice(-1)[0] ?? ''
+
   return (
-    <div className="space-y-6 animate-fade-in">
-
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Dashboard</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Geethanjali Vidya Nilayam — Overview</p>
-        </div>
-        <div className="text-right hidden sm:block">
-          <p className="text-xs text-gray-400">Academic Year</p>
-          <p className="text-sm font-semibold text-gray-700">2024–25</p>
-        </div>
-      </div>
-
-      {/* ── Stat Cards ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.map(card => (
-          <div key={card.label} className="card card-3d overflow-hidden">
-            {/* Gradient top accent */}
-            <div className={`h-1 w-full bg-gradient-to-r ${card.gradient}`} />
-            <div className="p-5">
-              <div className="flex items-start justify-between mb-3">
-                <div className={`p-2.5 rounded-xl ${card.iconBg}`}>
-                  <card.icon className={`w-5 h-5 ${card.iconColor}`} />
-                </div>
-                <ArrowUpRight className="w-4 h-4 text-gray-300" />
-              </div>
-              <p className="text-xs text-gray-500 mb-1">{card.label}</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {loading
-                  ? <span className="animate-pulse inline-block bg-gray-200 rounded h-7 w-16" />
-                  : card.value
-                }
-              </p>
-              <div className="flex items-center gap-1 mt-2">
-                <TrendingUp className="w-3 h-3 text-emerald-500" />
-                <span className="text-xs text-emerald-600 font-medium">{card.trend}</span>
-              </div>
-            </div>
+    <div className="space-y-5">
+      <PageHeader
+        icon={ClipboardCheck}
+        title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}, ${firstName}`}
+        subtitle={`Geethanjali Vidya Nilayam · ${formatDate(new Date(), 'EEEE, dd MMMM yyyy')}`}
+        actions={
+          <div className="plaque px-4 py-2 text-right">
+            <p className="text-[10px] uppercase tracking-[.1em]" style={{ color: 'var(--ink-faint)' }}>Academic Year</p>
+            <p className="text-sm font-bold" style={{ color: 'var(--ink)' }}>2024–25</p>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* ── Charts ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-        {/* Attendance bar chart */}
-        <div className="card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <span className="w-1 h-4 rounded-full bg-gradient-to-b from-navy-700 to-blue-500 inline-block" />
-              Weekly Attendance
-            </h3>
-            <span className="text-xs text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">This Week</span>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={attendanceData} barGap={4}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: 12, fill: '#94a3b8' }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tick={{ fontSize: 12, fill: '#94a3b8' }}
-                axisLine={false}
-                tickLine={false}
-                domain={[0, 100]}
-              />
-              <Tooltip
-                contentStyle={tooltipStyle}
-                cursor={{ fill: 'rgba(30,58,95,0.05)', radius: 8 } as any}
-              />
-              <Bar dataKey="present" fill="#1e3a5f" radius={[6, 6, 0, 0]} name="Present" />
-              <Bar dataKey="absent"  fill="#f59e0b" radius={[6, 6, 0, 0]} name="Absent" />
-            </BarChart>
-          </ResponsiveContainer>
-          <div className="flex items-center gap-5 mt-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-2 rounded-sm bg-[#1e3a5f]" />
-              <span className="text-xs text-gray-500">Present</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-2 rounded-sm bg-[#f59e0b]" />
-              <span className="text-xs text-gray-500">Absent</span>
-            </div>
+      {error && (
+        <div className="panel-flat flex items-start gap-3 p-4" style={{ borderColor: '#e0b4b0' }}>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: '#b8443c' }} />
+          <div>
+            <p className="text-sm font-semibold" style={{ color: '#b8443c' }}>Could not load dashboard data</p>
+            <p className="mt-0.5 text-xs" style={{ color: 'var(--ink-faint)' }}>{error}</p>
           </div>
         </div>
+      )}
 
-        {/* Fee donut chart */}
-        <div className="card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-800">Fee Collection</h3>
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">68% Done</span>
-          </div>
-          <ResponsiveContainer width="100%" height={150}>
-            <PieChart>
-              <Pie
-                data={feeData}
-                cx="50%" cy="50%"
-                innerRadius={42}
-                outerRadius={65}
-                dataKey="value"
-                paddingAngle={3}
-                strokeWidth={0}
-              >
-                {feeData.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i]} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-2 mt-2">
-            {feeData.map((item, i) => (
-              <div key={item.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: PIE_COLORS[i] }} />
-                  <span className="text-xs text-gray-600">{item.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-14 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${item.value}%`, backgroundColor: PIE_COLORS[i] }}
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-800 w-7 text-right">{item.value}%</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── Recent Notices ───────────────────────────────── */}
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-            <Megaphone className="w-4 h-4 text-[#1e3a5f]" />
-            Recent Notices
-          </h3>
-          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">View all</button>
-        </div>
-        {notices.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">No notices yet</p>
+      {/* ── Stats ─────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {loading || !stats ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="panel p-5"><div className="skeleton h-12" /></div>
+          ))
         ) : (
-          <div className="space-y-2">
-            {notices.map(n => {
-              const p   = n.priority || 'low'
-              const cfg = priorityCfg[p] || priorityCfg.low
-              return (
-                <div
-                  key={n.id}
-                  className={`flex items-start gap-3 p-3.5 rounded-xl border border-gray-100 border-l-4 bg-gray-50/50 hover:bg-gray-50 transition-colors ${cfg.bar}`}
-                >
-                  <span className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${cfg.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-800">{n.title}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${cfg.pill}`}>{p}</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{n.content}</p>
-                  </div>
-                  <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
-                    {new Date(n.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+          <>
+            <StatCard label="Active students" value={stats.students} icon={Users} tone="navy" />
+            <StatCard label="Teaching staff"  value={stats.teachers} icon={GraduationCap} tone="brass" />
+            <StatCard
+              label="Attendance today"
+              value={stats.attendancePct === null ? '—' : `${stats.attendancePct}%`}
+              hint={stats.attendancePct === null ? 'Not marked yet' : undefined}
+              icon={ClipboardCheck}
+              tone={stats.attendancePct === null ? 'slate' : stats.attendancePct >= 85 ? 'green' : 'red'}
+            />
+            <StatCard
+              label="Fees collected"
+              value={formatCurrency(stats.collected)}
+              hint={stats.outstanding > 0 ? `${formatCurrency(stats.outstanding)} outstanding` : 'All settled'}
+              icon={CreditCard}
+              tone={stats.overdueCount > 0 ? 'red' : 'green'}
+            />
+          </>
         )}
       </div>
 
+      {/* ── Charts ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="panel p-5 lg:col-span-2">
+          <h3 className="mb-4 font-bold rule-brass" style={{ color: 'var(--ink)' }}>Attendance, last 5 school days</h3>
+          {week.every(w => w.present + w.absent === 0) ? (
+            <EmptyState icon={ClipboardCheck} title="No attendance recorded yet" hint="Mark a register to see the trend here." />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={210}>
+                <BarChart data={week} barGap={4}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e8e3d8" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#8a97a8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: '#8a97a8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(30,58,95,.05)' }} />
+                  <Bar dataKey="present" fill={CHART.navy}  radius={[5, 5, 0, 0]} name="Present" />
+                  <Bar dataKey="absent"  fill={CHART.brass} radius={[5, 5, 0, 0]} name="Absent" />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="mt-2 flex items-center gap-5">
+                {[['Present', CHART.navy], ['Absent', CHART.brass]].map(([label, color]) => (
+                  <span key={label} className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    <span className="h-2 w-3 rounded-sm" style={{ background: color }} /> {label}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="panel p-5">
+          <h3 className="mb-4 font-bold rule-brass" style={{ color: 'var(--ink)' }}>Fee collection</h3>
+          {feeSplit.length === 0 ? (
+            <EmptyState icon={CreditCard} title="No fee records" hint="Raise a fee to see the split." />
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={150}>
+                <PieChart>
+                  <Pie data={feeSplit} cx="50%" cy="50%" innerRadius={44} outerRadius={66}
+                       dataKey="value" paddingAngle={3} strokeWidth={0}>
+                    {feeSplit.map(s => <Cell key={s.name} fill={s.color} />)}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `${v}%`} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="mt-3 space-y-2">
+                {feeSplit.map(s => (
+                  <div key={s.name} className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-soft)' }}>
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />{s.name}
+                    </span>
+                    <span className="text-xs font-bold tabular-nums" style={{ color: 'var(--ink)' }}>{s.value}%</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ── Notices + events ──────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="panel p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
+              <Megaphone className="h-4 w-4" style={{ color: 'var(--brass)' }} /> Recent notices
+            </h3>
+            <Link href="/notices" className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--navy-lift)' }}>
+              View all <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-14" />)}</div>
+          ) : notices.length === 0 ? (
+            <EmptyState icon={Megaphone} title="No notices posted" hint="Notices published by the office appear here." />
+          ) : (
+            <div className="space-y-2">
+              {notices.map(n => (
+                <div
+                  key={n.id}
+                  className="plaque flex items-start gap-3 p-3.5"
+                  style={{ borderLeft: `3px solid ${priorityTone[n.priority] ?? CHART.slate}` }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{n.title}</p>
+                      <span
+                        className="badge shrink-0"
+                        style={{ background: 'var(--paper-deep)', color: priorityTone[n.priority] ?? CHART.slate }}
+                      >
+                        {n.priority}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--ink-faint)' }}>{n.content}</p>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    {formatDate(n.created_at, 'dd MMM')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="panel p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
+              <CalendarDays className="h-4 w-4" style={{ color: 'var(--brass)' }} /> Coming up
+            </h3>
+            <Link href="/calendar" className="text-xs font-semibold" style={{ color: 'var(--navy-lift)' }}>Calendar</Link>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton h-12" />)}</div>
+          ) : events.length === 0 ? (
+            <EmptyState icon={CalendarDays} title="Nothing scheduled" hint="Upcoming events show here." />
+          ) : (
+            <div className="space-y-2">
+              {events.map(e => (
+                <div key={e.id} className="plaque flex items-center gap-3 p-3">
+                  <div
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] text-white"
+                    style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}
+                  >
+                    <span className="text-xs font-bold">{formatDate(e.event_date, 'dd')}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{e.title}</p>
+                    <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                      {formatDate(e.event_date, 'MMM yyyy')} · {e.event_type}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

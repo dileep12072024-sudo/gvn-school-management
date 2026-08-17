@@ -2,160 +2,328 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   GVN — "Classic 3D" design system
+   Depth comes from layered light: an ambient shadow, a contact
+   shadow, a 1px top highlight and a hairline bottom shade.
+   No blur-glass, no neon. Brass on navy on warm paper.
+   ============================================================ */
+
 :root {
-  --navy: #1e3a5f;
-  --gold: #f59e0b;
+  /* Ground */
+  --paper:        #f4f1ea;
+  --paper-deep:   #e8e3d8;
+  --surface:      #fffefb;
+  --surface-sunk: #f7f4ee;
+
+  /* Ink */
+  --ink:          #16202e;
+  --ink-soft:     #48586d;
+  --ink-faint:    #8a97a8;
+
+  /* Brand */
+  --navy:         #1e3a5f;
+  --navy-deep:    #0f2138;
+  --navy-lift:    #2e5a96;
+  --brass:        #b8873b;
+  --brass-lift:   #d9a94e;
+  --brass-deep:   #8a6224;
+
+  /* Edges */
+  --edge:         #ded7c9;
+  --edge-strong:  #cabfa9;
+
+  /* The depth recipe. Everything raised uses these. */
+  --lift-1:
+    0 1px 1px rgba(22, 32, 46, .05),
+    0 2px 4px rgba(22, 32, 46, .05),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+  --lift-2:
+    0 1px 2px rgba(22, 32, 46, .06),
+    0 4px 10px rgba(22, 32, 46, .07),
+    0 12px 24px -12px rgba(22, 32, 46, .12),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+  --lift-3:
+    0 2px 4px rgba(22, 32, 46, .07),
+    0 10px 24px rgba(22, 32, 46, .09),
+    0 28px 48px -20px rgba(22, 32, 46, .18),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  --sunk:
+    inset 0 2px 4px rgba(22, 32, 46, .09),
+    inset 0 1px 1px rgba(22, 32, 46, .06);
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background-color: #f0f4f8;
-  color: #1e293b;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-/* ── Glassmorphism ─────────────────────────────── */
-.glass {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-.glass-dark {
-  background: rgba(21, 42, 69, 0.72);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-white {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-}
-
-/* ── 3-D card hover ────────────────────────────── */
-.card-3d {
-  transition: transform 0.28s ease, box-shadow 0.28s ease;
-}
-.card-3d:hover {
-  transform: translateY(-5px) scale(1.012);
-  box-shadow: 0 20px 44px rgba(30, 58, 95, 0.14), 0 6px 14px rgba(30, 58, 95, 0.08);
-}
-
-/* ── Gradient text ─────────────────────────────── */
-.text-gradient-gold {
-  background: linear-gradient(135deg, #f59e0b 0%, #fde68a 50%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-navy {
-  background: linear-gradient(135deg, #1e3a5f 0%, #3d6cab 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Glow effects ──────────────────────────────── */
-.glow-gold {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.45), 0 0 44px rgba(245, 158, 11, 0.2);
-}
-
-.glow-navy {
-  box-shadow: 0 0 20px rgba(30, 58, 95, 0.45), 0 0 44px rgba(30, 58, 95, 0.2);
-}
-
-/* ── Animated gradient bg ──────────────────────── */
-.bg-animated-gradient {
-  background: linear-gradient(-45deg, #0b1a2c, #1e3a5f, #152a45, #2e5a96);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
-}
-
-/* ── Subtle dot-grid overlay ───────────────────── */
-.bg-grid-pattern {
+  background-color: var(--paper);
+  /* Faint woven paper tooth — reads as texture, not noise. */
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    radial-gradient(circle at 1px 1px, rgba(22, 32, 46, .022) 1px, transparent 0);
+  background-size: 4px 4px;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── Keyframes (also declared in tailwind.config.ts for animate-* classes) */
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
+::selection { background: var(--brass-lift); color: #fff; }
+
+/* ── Scrollbars ─────────────────────────────────── */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--edge-strong);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-20px); }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); background-clip: content-box; }
+
+/* ============================================================
+   Interactive tilt — driven by <Tilt3D>, which writes --rx/--ry
+   and --mx/--my (pointer position, %) onto the element.
+   ============================================================ */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform .35s cubic-bezier(.2, .8, .3, 1), box-shadow .35s ease;
+  will-change: transform;
 }
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50%      { transform: translateY(-28px) rotate(180deg); }
+.tilt-active {
+  transform:
+    perspective(900px)
+    rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg))
+    translateZ(0);
+  transition: transform .08s linear, box-shadow .35s ease;
+  box-shadow: var(--lift-3);
+}
+/* Specular sheen that tracks the cursor. */
+.tilt-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease;
+  background: radial-gradient(
+    380px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, .55),
+    transparent 62%
+  );
+}
+.tilt-active.tilt-sheen::after { opacity: 1; }
+
+/* Children can float above the card face. */
+.layer-1 { transform: translateZ(18px); }
+.layer-2 { transform: translateZ(34px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt, .tilt-active { transform: none !important; transition: box-shadow .2s ease; }
+  .tilt-sheen::after { display: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
+/* ── Keyframes ──────────────────────────────────── */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise      { animation: riseIn .45s cubic-bezier(.2, .8, .3, 1) both; }
+.animate-rise-slow { animation: riseIn .7s  cubic-bezier(.2, .8, .3, 1) both; }
+
+@keyframes sweep {
+  from { background-position: -180% 0; }
+  to   { background-position: 180% 0; }
+}
+
+/* ============================================================
+   Components
+   ============================================================ */
 @layer components {
-  .btn-primary {
-    @apply bg-[#1e3a5f] hover:bg-[#152a45] text-white font-medium px-4 py-2 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg;
+
+  /* ── Surfaces ──────────────────────────────────── */
+  .panel {
+    @apply relative rounded-[var(--radius-lg)] border;
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    border-color: var(--edge);
+    box-shadow: var(--lift-2);
   }
 
-  .btn-gradient {
-    @apply text-white font-semibold px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2e5a96 100%);
-    box-shadow: 0 4px 18px rgba(30, 58, 95, 0.38);
+  .panel-flat {
+    @apply relative rounded-[var(--radius)] border;
+    background: var(--surface);
+    border-color: var(--edge);
+    box-shadow: var(--lift-1);
   }
-  .btn-gradient:hover:not(:disabled) {
-    background: linear-gradient(135deg, #152a45 0%, #1e3a5f 100%);
-    box-shadow: 0 8px 28px rgba(30, 58, 95, 0.52);
-    transform: translateY(-1px);
+
+  /* Engraved plaque — for section headers and empty states. */
+  .plaque {
+    @apply rounded-[var(--radius)] border;
+    background: var(--surface-sunk);
+    border-color: var(--edge);
+    box-shadow: var(--sunk);
   }
-  .btn-gradient:active:not(:disabled) {
+
+  /* ── Buttons: a physical key with a hard bottom edge ── */
+  .btn {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]
+           px-4 py-2.5 text-sm font-semibold select-none
+           transition-[transform,box-shadow,background] duration-150;
     transform: translateY(0);
   }
-
-  .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-xl border border-gray-200 transition-all duration-200;
+  .btn:active:not(:disabled) { transform: translateY(2px); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn:focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
   }
 
-  .card {
-    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+  .btn-primary {
+    color: #fff;
+    background: linear-gradient(180deg, var(--navy-lift) 0%, var(--navy) 55%, var(--navy-deep) 100%);
+    box-shadow:
+      0 3px 0 var(--navy-deep),
+      0 5px 12px rgba(15, 33, 56, .32),
+      inset 0 1px 0 rgba(255, 255, 255, .22);
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn-primary:active:not(:disabled) {
+    box-shadow:
+      0 1px 0 var(--navy-deep),
+      0 2px 6px rgba(15, 33, 56, .3),
+      inset 0 2px 5px rgba(0, 0, 0, .28);
   }
 
+  .btn-brass {
+    color: #fff;
+    background: linear-gradient(180deg, var(--brass-lift) 0%, var(--brass) 55%, var(--brass-deep) 100%);
+    box-shadow:
+      0 3px 0 var(--brass-deep),
+      0 5px 12px rgba(138, 98, 36, .35),
+      inset 0 1px 0 rgba(255, 255, 255, .32);
+  }
+  .btn-brass:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn-brass:active:not(:disabled) {
+    box-shadow:
+      0 1px 0 var(--brass-deep),
+      0 2px 6px rgba(138, 98, 36, .3),
+      inset 0 2px 5px rgba(0, 0, 0, .25);
+  }
+
+  .btn-ghost {
+    color: var(--ink-soft);
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    border: 1px solid var(--edge);
+    box-shadow: 0 2px 0 var(--edge-strong), 0 3px 8px rgba(22, 32, 46, .07);
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--edge-strong); }
+  .btn-ghost:active:not(:disabled) { box-shadow: 0 0 0 var(--edge-strong), var(--sunk); }
+
+  .btn-danger {
+    color: #fff;
+    background: linear-gradient(180deg, #d15b52 0%, #b8443c 55%, #94322b 100%);
+    box-shadow:
+      0 3px 0 #94322b,
+      0 5px 12px rgba(148, 50, 43, .32),
+      inset 0 1px 0 rgba(255, 255, 255, .22);
+  }
+  .btn-danger:hover:not(:disabled) { filter: brightness(1.07); }
+
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+  .btn-icon { @apply p-2; }
+
+  /* ── Inputs: a milled well ─────────────────────── */
   .input {
-    @apply w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-navy-700/25 focus:border-navy-700 outline-none transition-all duration-200 bg-gray-50 focus:bg-white;
+    @apply w-full rounded-[var(--radius-sm)] px-3 py-2.5 text-sm outline-none
+           transition-[box-shadow,border-color,background] duration-200;
+    background: var(--surface-sunk);
+    border: 1px solid var(--edge-strong);
+    box-shadow: var(--sunk);
+    color: var(--ink);
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:hover:not(:disabled) { border-color: var(--ink-faint); }
+  .input:focus {
+    background: var(--surface);
+    border-color: var(--navy-lift);
+    box-shadow:
+      inset 0 2px 4px rgba(22, 32, 46, .06),
+      0 0 0 3px rgba(46, 90, 150, .18);
+  }
+  .input:disabled { opacity: .6; cursor: not-allowed; }
+  .input-error {
+    border-color: #b8443c;
+    box-shadow: inset 0 2px 4px rgba(22, 32, 46, .06), 0 0 0 3px rgba(184, 68, 60, .16);
   }
 
+  .label {
+    @apply block text-[11px] font-semibold uppercase tracking-[.08em] mb-1.5;
+    color: var(--ink-faint);
+  }
+
+  .field-error { @apply text-xs mt-1; color: #b8443c; }
+
+  /* ── Badges: engraved pill ─────────────────────── */
   .badge {
-    @apply px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 1px 1px rgba(22, 32, 46, .06);
   }
 
+  /* ── Tables ────────────────────────────────────── */
   .table-header {
-    @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide;
+    @apply px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em];
+    color: var(--ink-faint);
+    background: linear-gradient(180deg, var(--surface-sunk) 0%, var(--paper-deep) 100%);
+    border-bottom: 1px solid var(--edge-strong);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+  }
+  .table-cell { @apply px-4 py-3 text-sm; color: var(--ink-soft); }
+  .table-row { transition: background .15s ease, box-shadow .15s ease; }
+  .table-row:hover {
+    background: linear-gradient(90deg, rgba(184, 135, 59, .07), transparent 60%);
+    box-shadow: inset 3px 0 0 var(--brass);
   }
 
-  .table-cell {
-    @apply px-4 py-3 text-sm text-gray-700;
+  /* ── Skeleton ──────────────────────────────────── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-sunk) 25%, var(--paper-deep) 50%, var(--surface-sunk) 75%);
+    background-size: 200% 100%;
+    animation: sweep 1.4s ease-in-out infinite;
+    @apply rounded-md;
   }
+
+  /* ── Section heading with brass rule ───────────── */
+  .rule-brass::after {
+    content: '';
+    @apply block mt-2 h-px w-16 rounded-full;
+    background: linear-gradient(90deg, var(--brass), transparent);
+  }
+}
+
+/* ============================================================
+   Print — receipts and report cards
+   ============================================================ */
+@media print {
+  body { background: #fff !important; background-image: none !important; }
+  .no-print { display: none !important; }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    background: #fff !important;
+  }
+  @page { margin: 14mm; }
 }
