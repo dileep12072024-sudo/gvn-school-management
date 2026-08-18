@@ -80,6 +80,13 @@
 
   /* Comfortable tap target. Bumped on coarse pointers below. */
   --tap: 40px;
+
+  /* Motion. --spring overshoots on purpose: that overshoot is what makes an
+     icon read as "popping" rather than "sliding". --ease is for anything that
+     must not overshoot, like opacity and colour. */
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --spring-soft: cubic-bezier(.22, 1.2, .36, 1);
+  --ease: cubic-bezier(.2, .8, .3, 1);
 }
 
 html {
@@ -400,6 +407,14 @@ body {
     gap: .625rem;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
   }
+  /* Deal the tiles in one after another and drift them out of phase. Doing it
+     positionally means a page can add a fifth tile without renumbering. */
+  .stat-grid > *:nth-child(1) { --i: 0; --bob-i: 0; }
+  .stat-grid > *:nth-child(2) { --i: 1; --bob-i: 1; }
+  .stat-grid > *:nth-child(3) { --i: 2; --bob-i: 2; }
+  .stat-grid > *:nth-child(4) { --i: 3; --bob-i: 3; }
+  .stat-grid > *:nth-child(5) { --i: 4; --bob-i: 4; }
+  .stat-grid > *:nth-child(n+6) { --i: 5; --bob-i: 5; }
 
   /* ── Section heading with brass rule ───────────── */
   .rule-brass::after {
@@ -423,6 +438,182 @@ body {
 /* Respect the notch / home indicator. */
 .safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-t { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* ============================================================
+   Motion — every surface gets its own small movement
+   ============================================================ */
+
+/* ── Icons that pop ─────────────────────────────────────────
+   Any svg inside a control springs up and out on hover and punches back down
+   on press. Done here rather than per-component so a new button written next
+   month inherits it without anybody remembering to. */
+.btn svg,
+.icon-pop,
+.table-row svg,
+[role="button"] svg {
+  transition: transform .38s var(--spring);
+  will-change: transform;
+}
+.btn:hover:not(:disabled) svg,
+.icon-pop:hover,
+.table-row:hover svg,
+[role="button"]:hover svg { transform: translateY(-2.5px) scale(1.14); }
+
+.btn:active:not(:disabled) svg,
+[role="button"]:active svg { transform: translateY(1px) scale(.94); transition-duration: .12s; }
+
+/* The coloured plates behind stat/header icons get a bigger, slower version
+   of the same move, plus a tilt — they are big enough to carry it. */
+.plate {
+  transition: transform .45s var(--spring), box-shadow .45s var(--ease);
+  will-change: transform;
+}
+.panel:hover .plate,
+.plate:hover {
+  transform: translateY(-4px) rotate(-4deg) scale(1.06);
+  box-shadow: 0 10px 0 rgba(0,0,0,.14), 0 16px 26px rgba(20,29,41,.28), inset 0 1px 0 rgba(255,255,255,.34);
+}
+.panel:active .plate { transform: translateY(0) rotate(0deg) scale(.98); transition-duration: .12s; }
+
+/* ── Idle float ─────────────────────────────────────────────
+   A very small vertical drift. --bob-i staggers siblings so a row of cards
+   breathes out of phase instead of pulsing in lockstep like a heartbeat. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.float {
+  animation: bob 5.5s var(--ease) infinite;
+  animation-delay: calc(var(--bob-i, 0) * -1.3s);
+}
+.float-slow { animation: bob 8s var(--ease) infinite; animation-delay: calc(var(--bob-i, 0) * -2s); }
+
+/* ── Press physics for every raised surface ─────────────────
+   Panels and rows sink slightly when touched, which is the only press
+   feedback an iPhone gets (navigator.vibrate does not exist there). */
+.panel, .panel-flat, .plaque {
+  transition: transform .3s var(--spring-soft), box-shadow .3s var(--ease);
+}
+.panel:active, .panel-flat:active { transform: translateY(1.5px) scale(.995); transition-duration: .1s; }
+
+.table-row:active { transform: scale(.997); }
+
+/* Inputs lift out of their well when focused. */
+.input:focus { transform: translateY(-1px); }
+.input { transition: box-shadow .25s var(--ease), border-color .25s var(--ease),
+                     background .25s var(--ease), transform .25s var(--spring-soft); }
+
+/* ── Staggered entrance ─────────────────────────────────────
+   --i is the child's index; set it inline and a grid deals itself in. */
+@keyframes dealIn {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.deal {
+  animation: dealIn .55s var(--spring-soft) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ── Scroll reveal (driven by <Reveal>) ─────────────────────── */
+.reveal { opacity: 0; transform: translateY(26px); }
+.reveal-in {
+  animation: dealIn .7s var(--spring-soft) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* ── Cinematic backdrops ────────────────────────────────────
+   Two counter-rotating conic sweeps under a heavy blur read as moving light
+   through a window. Slow enough (40s+) that it never pulls the eye. */
+@keyframes drift {
+  0%   { transform: translate3d(0, 0, 0) rotate(0deg)   scale(1); }
+  50%  { transform: translate3d(3%, -4%, 0) rotate(180deg) scale(1.15); }
+  100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
+}
+.aurora {
+  position: absolute;
+  inset: -35%;
+  pointer-events: none;
+  filter: blur(70px);
+  opacity: .5;
+  animation: drift 46s linear infinite;
+}
+.aurora-2 { animation-duration: 68s; animation-direction: reverse; opacity: .34; }
+
+/* A slow specular bar that travels across a surface — the "cinematic" sweep. */
+@keyframes glint {
+  0%   { transform: translateX(-130%) skewX(-18deg); }
+  60%, 100% { transform: translateX(240%) skewX(-18deg); }
+}
+.glint { position: relative; overflow: hidden; }
+.glint::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 42%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
+  animation: glint 7s var(--ease) infinite;
+}
+
+/* ── Rejection shake ────────────────────────────────────────
+   Decaying amplitude, not a constant wobble — a constant one reads as a
+   loading state, a decaying one reads as "no". */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-9px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+.shake { animation: shake .5s var(--ease) both; }
+
+/* ── Magnetic pull ──────────────────────────────────────────
+   <Magnetic> writes --dx/--dy; the element leans toward the cursor. */
+.magnetic {
+  transition: transform .45s var(--spring);
+  will-change: transform;
+}
+.magnetic-on { transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0); transition-duration: .12s; }
+
+/* ── Custom cursor ──────────────────────────────────────────
+   Native cursor is left alone; this is a layer on top of it. */
+.cursor-ring, .cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease, background .25s ease, border-color .25s ease;
+}
+.cursor-ring {
+  height: 36px; width: 36px;
+  border-radius: 50%;
+  border: 1.5px solid var(--brass);
+  mix-blend-mode: multiply;
+}
+.cursor-ring[data-over='y'] {
+  border-color: var(--brass-lift);
+  background: rgba(184, 135, 59, .10);
+}
+.cursor-dot {
+  height: 6px; width: 6px;
+  border-radius: 50%;
+  background: var(--navy);
+}
+/* Touch and reduced-motion users get nothing to trip over. */
+@media (pointer: coarse) {
+  .cursor-ring, .cursor-dot { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .float, .float-slow, .aurora, .glint::after, .shake { animation: none !important; }
+  .deal, .reveal-in { animation: none !important; }
+  .reveal { opacity: 1; transform: none; }
+  .cursor-ring, .cursor-dot { display: none; }
+  .plate, .btn svg, .icon-pop { transition: none; }
+  .panel:hover .plate, .plate:hover { transform: none; }
+}
 
 /* ============================================================
    Print — receipts and report cards

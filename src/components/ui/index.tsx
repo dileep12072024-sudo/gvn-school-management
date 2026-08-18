@@ -24,7 +24,7 @@ export function PageHeader({
     <div className="flex flex-wrap items-center justify-between gap-3 animate-rise sm:gap-4">
       <div className="flex min-w-0 items-center gap-3 sm:gap-3.5">
         <div
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
+          className="plate grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
           style={{
             background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
             boxShadow: '0 3px 0 var(--navy-deep), 0 6px 14px rgba(15,33,56,.3), inset 0 1px 0 rgba(255,255,255,.25)',
@@ -63,13 +63,15 @@ export function StatCard({
   tone?: Tone
   hint?: string
 }) {
+  // Stagger and float phase come from :nth-child in globals.css, so no call
+  // site has to hand-number its tiles.
   return (
-    <Tilt3D className="panel overflow-hidden p-3.5 sm:p-5">
+    <Tilt3D className="panel deal float overflow-hidden p-3.5 sm:p-5">
       {/* Two tiles fit across a 390px phone, so the icon sits above the number
           there and beside it once there is room. */}
       <div className="layer-1 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
         <div
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white sm:h-12 sm:w-12"
+          className="plate grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white sm:h-12 sm:w-12"
           style={{
             background: TONES[tone],
             boxShadow: '0 3px 0 rgba(0,0,0,.18), 0 6px 14px rgba(20,29,41,.22), inset 0 1px 0 rgba(255,255,255,.3)',
@@ -188,7 +190,7 @@ export function EmptyState({
   const body = (
     <div className="plaque mx-auto my-8 max-w-sm px-6 py-10 text-center">
       <div
-        className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-[var(--radius)]"
+        className="icon-pop float mx-auto mb-3 grid h-14 w-14 place-items-center rounded-[var(--radius)]"
         style={{ background: 'var(--paper-deep)', boxShadow: 'var(--sunk)' }}
       >
         <Icon className="h-7 w-7" style={{ color: 'var(--ink-faint)' }} />

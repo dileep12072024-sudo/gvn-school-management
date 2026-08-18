@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Fraunces } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import Interactions from '@/components/ui/Interactions'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' })
 // A classic transitional serif for headings and the printed sheets.
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             error: { iconTheme: { primary: '#b8443c', secondary: '#fff' } },
           }}
         />
+        <Interactions />
         {children}
       </body>
     </html>
