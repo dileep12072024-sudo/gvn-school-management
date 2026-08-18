@@ -185,3 +185,16 @@ export function getEventTypeColor(type: string) {
   }
   return colors[type] || 'bg-gray-500'
 }
+
+/**
+ * The name a person is actually called by.
+ *
+ * Andhra names routinely lead with a family or village initial — "K. Sarala
+ * Devi", "B. Venkata Rao" — so neither the first word nor the last is right:
+ * the first is an initial, the last is a surname. Take the first word that
+ * carries more than one letter once the dots are stripped.
+ */
+export function callingName(full: string | null | undefined) {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean)
+  return parts.find(p => p.replace(/\./g, '').length > 1) ?? parts[0] ?? ''
+}

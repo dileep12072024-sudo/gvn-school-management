@@ -180,7 +180,7 @@ export default function ExamsPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="stat-grid">
         <StatCard label="Total exams" value={exams.length} icon={FileText} tone="navy" />
         <StatCard label="Upcoming" value={upcoming} icon={TrendingUp} tone="brass" />
         <StatCard label="Subjects" value={subjects} icon={Award} tone="green" />

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, Menu, PanelLeftClose } from 'lucide-react'
 import { getInitials, getRoleLabel, cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
-import { isAdmin } from '@/lib/nav'
 import type { Profile } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -29,7 +28,7 @@ export default function Header({
 
   return (
     <header
-      className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-3 px-4 md:px-6"
+      className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:px-6"
       style={{
         background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%)',
         borderBottom: '1px solid var(--edge-strong)',
@@ -106,16 +105,14 @@ export default function Header({
                 </span>
               </div>
               <div className="p-1.5">
-                {isAdmin(profile.role) && (
-                  <button
-                    role="menuitem"
-                    onClick={() => { setOpen(false); router.push('/settings') }}
-                    className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm transition-colors hover:bg-black/[.04]"
-                    style={{ color: 'var(--ink-soft)' }}
-                  >
-                    <Settings className="h-4 w-4" style={{ color: 'var(--ink-faint)' }} /> Settings
-                  </button>
-                )}
+                <button
+                  role="menuitem"
+                  onClick={() => { setOpen(false); router.push('/settings') }}
+                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm transition-colors hover:bg-black/[.04]"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
+                  <Settings className="h-4 w-4" style={{ color: 'var(--ink-faint)' }} /> Settings
+                </button>
                 <button
                   role="menuitem"
                   onClick={handleSignOut}

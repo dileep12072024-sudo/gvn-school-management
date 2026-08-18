@@ -118,7 +118,7 @@ export default function TransportPage() {
         )}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="stat-grid">
         <StatCard label="Routes" value={routes.length} icon={MapPin} tone="navy" />
         <StatCard label="Vehicles" value={vehicles.length} icon={Bus} tone="brass" />
         <StatCard

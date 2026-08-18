@@ -21,8 +21,8 @@ export function PageHeader({
   actions?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 animate-rise">
-      <div className="flex items-center gap-3.5">
+    <div className="flex flex-wrap items-center justify-between gap-3 animate-rise sm:gap-4">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-3.5">
         <div
           className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
           style={{
@@ -32,12 +32,12 @@ export function PageHeader({
         >
           <Icon className="h-5 w-5" />
         </div>
-        <div>
-          <h2 className="text-xl font-bold tracking-tight" style={{ color: 'var(--ink)' }}>{title}</h2>
-          {subtitle && <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{subtitle}</p>}
+        <div className="min-w-0">
+          <h2 className="truncate text-lg font-bold tracking-tight sm:text-xl" style={{ color: 'var(--ink)' }}>{title}</h2>
+          {subtitle && <p className="truncate text-xs sm:text-sm" style={{ color: 'var(--ink-faint)' }}>{subtitle}</p>}
         </div>
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex w-full items-center gap-2 sm:w-auto">{actions}</div>}
     </div>
   )
 }
@@ -64,19 +64,21 @@ export function StatCard({
   hint?: string
 }) {
   return (
-    <Tilt3D className="panel overflow-hidden p-5">
-      <div className="layer-1 flex items-center gap-4">
+    <Tilt3D className="panel overflow-hidden p-3.5 sm:p-5">
+      {/* Two tiles fit across a 390px phone, so the icon sits above the number
+          there and beside it once there is room. */}
+      <div className="layer-1 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
         <div
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-[var(--radius)] text-white"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white sm:h-12 sm:w-12"
           style={{
             background: TONES[tone],
-            boxShadow: '0 3px 0 rgba(0,0,0,.18), 0 6px 14px rgba(22,32,46,.22), inset 0 1px 0 rgba(255,255,255,.3)',
+            boxShadow: '0 3px 0 rgba(0,0,0,.18), 0 6px 14px rgba(20,29,41,.22), inset 0 1px 0 rgba(255,255,255,.3)',
           }}
         >
-          <Icon className="h-6 w-6" />
+          <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
         </div>
         <div className="min-w-0">
-          <p className="truncate text-2xl font-bold tabular-nums" style={{ color: 'var(--ink)' }}>{value}</p>
+          <p className="truncate text-xl font-bold tabular-nums sm:text-2xl" style={{ color: 'var(--ink)' }}>{value}</p>
           <p className="truncate text-xs font-medium" style={{ color: 'var(--ink-faint)' }}>{label}</p>
           {hint && <p className="truncate text-[11px]" style={{ color: 'var(--ink-faint)' }}>{hint}</p>}
         </div>
@@ -113,8 +115,8 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(15, 33, 56, .45)' }}
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+      style={{ background: 'rgba(13, 30, 51, .55)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -122,13 +124,24 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'panel animate-rise flex max-h-[88vh] w-full flex-col overflow-hidden',
-          wide ? 'max-w-3xl' : 'max-w-lg',
+          // Phone: a sheet anchored to the bottom, square at the base, thumb in
+          // reach of the footer buttons. Desktop: the usual centred card.
+          'panel safe-b flex w-full flex-col overflow-hidden',
+          'max-h-[92dvh] rounded-b-none sm:max-h-[88dvh] sm:rounded-b-[var(--radius-lg)]',
+          wide ? 'sm:max-w-3xl' : 'sm:max-w-lg',
         )}
-        style={{ boxShadow: '0 30px 60px -20px rgba(15,33,56,.5), 0 10px 24px rgba(15,33,56,.25)' }}
+        style={{
+          animation: 'sheetUp .32s cubic-bezier(.2,.8,.3,1) both',
+          boxShadow: '0 30px 60px -20px rgba(13,30,51,.55), 0 10px 24px rgba(13,30,51,.28)',
+        }}
       >
+        {/* Grab handle — the affordance that says "this sheet dismisses". */}
+        <div className="flex justify-center pt-2 sm:hidden">
+          <span className="h-1 w-10 rounded-full" style={{ background: 'var(--edge-strong)' }} />
+        </div>
+
         <div
-          className="flex items-start justify-between gap-4 px-6 py-5 text-white"
+          className="flex items-start justify-between gap-4 px-5 py-4 text-white sm:px-6 sm:py-5"
           style={{
             background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 70%, var(--navy-deep))',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(15,33,56,.3)',
@@ -147,11 +160,11 @@ export function Modal({
           </button>
         </div>
 
-        <div className="scrollbar-thin flex-1 overflow-y-auto px-6 py-5">{children}</div>
+        <div className="scrollbar-thin flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">{children}</div>
 
         {footer && (
           <div
-            className="flex justify-end gap-2.5 px-6 py-4"
+            className="flex flex-col-reverse gap-2.5 px-5 py-4 sm:flex-row sm:justify-end sm:px-6"
             style={{ borderTop: '1px solid var(--edge)', background: 'var(--surface-sunk)' }}
           >
             {footer}
@@ -212,7 +225,7 @@ export function TableShell({
 }) {
   return (
     <div className="panel overflow-hidden">
-      <div className="scrollbar-thin overflow-x-auto">
+      <div className="scrollbar-thin table-scroll overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr>{columns.map(c => <th key={c} className="table-header">{c}</th>)}</tr>

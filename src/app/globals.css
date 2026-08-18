@@ -3,73 +3,110 @@
 @tailwind utilities;
 
 /* ============================================================
-   GVN — "Classic 3D" design system
-   Depth comes from layered light: an ambient shadow, a contact
-   shadow, a 1px top highlight and a hairline bottom shade.
-   No blur-glass, no neon. Brass on navy on warm paper.
+   GVN — "Lacquer" design system
+   Classical, cinematic, mobile-first.
+
+   Depth is built from four stacked cues, never from blur or glow:
+     1. an ambient shadow that says "how far off the page"
+     2. a tight contact shadow that says "where it touches"
+     3. a 1px top highlight that says "there is a light above"
+     4. a *small* gloss band — lacquer on wood, not neon bloom
+
+   Palette is brass on navy on warm paper. No saturated glow anywhere.
    ============================================================ */
 
 :root {
   /* Ground */
-  --paper:        #f4f1ea;
-  --paper-deep:   #e8e3d8;
-  --surface:      #fffefb;
-  --surface-sunk: #f7f4ee;
+  --paper:        #efeade;
+  --paper-deep:   #e2dbcb;
+  --surface:      #fffdf8;
+  --surface-sunk: #f6f2e9;
 
   /* Ink */
-  --ink:          #16202e;
-  --ink-soft:     #48586d;
-  --ink-faint:    #8a97a8;
+  --ink:          #141d29;
+  --ink-soft:     #45556a;
+  --ink-faint:    #8794a6;
 
   /* Brand */
   --navy:         #1e3a5f;
-  --navy-deep:    #0f2138;
-  --navy-lift:    #2e5a96;
+  --navy-deep:    #0d1e33;
+  --navy-lift:    #2f5c99;
   --brass:        #b8873b;
-  --brass-lift:   #d9a94e;
-  --brass-deep:   #8a6224;
+  --brass-lift:   #ddaf57;
+  --brass-deep:   #825c20;
 
   /* Edges */
-  --edge:         #ded7c9;
-  --edge-strong:  #cabfa9;
+  --edge:         #ddd5c4;
+  --edge-strong:  #c7bba2;
 
-  /* The depth recipe. Everything raised uses these. */
+  /* ── The depth recipe ─────────────────────────── */
   --lift-1:
-    0 1px 1px rgba(22, 32, 46, .05),
-    0 2px 4px rgba(22, 32, 46, .05),
+    0 1px 1px rgba(20, 29, 41, .05),
+    0 2px 4px rgba(20, 29, 41, .05),
     inset 0 1px 0 rgba(255, 255, 255, .9);
   --lift-2:
-    0 1px 2px rgba(22, 32, 46, .06),
-    0 4px 10px rgba(22, 32, 46, .07),
-    0 12px 24px -12px rgba(22, 32, 46, .12),
+    0 1px 2px rgba(20, 29, 41, .07),
+    0 5px 12px rgba(20, 29, 41, .08),
+    0 16px 30px -14px rgba(20, 29, 41, .16),
     inset 0 1px 0 rgba(255, 255, 255, .95);
   --lift-3:
-    0 2px 4px rgba(22, 32, 46, .07),
-    0 10px 24px rgba(22, 32, 46, .09),
-    0 28px 48px -20px rgba(22, 32, 46, .18),
+    0 2px 5px rgba(20, 29, 41, .09),
+    0 14px 30px rgba(20, 29, 41, .12),
+    0 40px 60px -26px rgba(20, 29, 41, .26),
     inset 0 1px 0 rgba(255, 255, 255, 1);
   --sunk:
-    inset 0 2px 4px rgba(22, 32, 46, .09),
-    inset 0 1px 1px rgba(22, 32, 46, .06);
+    inset 0 2px 4px rgba(20, 29, 41, .09),
+    inset 0 1px 1px rgba(20, 29, 41, .06);
+
+  /* ── The gloss recipe ─────────────────────────── */
+  /* One short specular band across the top of a raised face. Kept under 45%
+     height and under .7 alpha so it reads as varnish, not as a light source. */
+  --gloss-light: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .72) 0%,
+    rgba(255, 255, 255, .16) 34%,
+    rgba(255, 255, 255, 0) 52%
+  );
+  --gloss-dark: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .20) 0%,
+    rgba(255, 255, 255, .05) 40%,
+    rgba(255, 255, 255, 0) 56%
+  );
 
   --radius:    14px;
   --radius-sm: 10px;
   --radius-lg: 20px;
+
+  /* Comfortable tap target. Bumped on coarse pointers below. */
+  --tap: 40px;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* Stop iOS from re-scaling text when the device is rotated. */
+  -webkit-text-size-adjust: 100%;
+}
 
 body {
-  background-color: var(--paper);
-  /* Faint woven paper tooth — reads as texture, not noise. */
-  background-image:
-    radial-gradient(circle at 1px 1px, rgba(22, 32, 46, .022) 1px, transparent 0);
-  background-size: 4px 4px;
   color: var(--ink);
+  background-color: var(--paper);
+  /* Cinematic ground: a soft key light from above, a warm brass bounce from the
+     lower right, a vignette pulling the corners down, and a paper tooth. */
+  background-image:
+    radial-gradient(1100px 620px at 50% -8%,  rgba(255, 255, 255, .90), transparent 70%),
+    radial-gradient(900px  760px at 108% 104%, rgba(184, 135, 59, .10), transparent 62%),
+    radial-gradient(1000px 800px at -10% 100%, rgba(30,  58,  95, .07), transparent 60%),
+    radial-gradient(140% 120% at 50% 45%, transparent 52%, rgba(20, 29, 41, .09) 100%),
+    radial-gradient(circle at 1px 1px, rgba(20, 29, 41, .022) 1px, transparent 0);
+  background-size: auto, auto, auto, auto, 4px 4px;
+  background-attachment: fixed, fixed, fixed, fixed, scroll;
   -webkit-font-smoothing: antialiased;
+  /* Never let a wide table drag the whole page sideways. */
+  overflow-x: hidden;
 }
 
-::selection { background: var(--brass-lift); color: #fff; }
+::selection { background: var(--brass); color: #fff; }
 
 /* ── Scrollbars ─────────────────────────────────── */
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
@@ -113,9 +150,9 @@ body {
   opacity: 0;
   transition: opacity .3s ease;
   background: radial-gradient(
-    380px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(255, 255, 255, .55),
-    transparent 62%
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, .50),
+    transparent 60%
   );
 }
 .tilt-active.tilt-sheen::after { opacity: 1; }
@@ -123,6 +160,14 @@ body {
 /* Children can float above the card face. */
 .layer-1 { transform: translateZ(18px); }
 .layer-2 { transform: translateZ(34px); }
+
+/* Touch devices: a tilt that sticks after a tap is worse than no tilt.
+   Tilt3D also guards this in JS; this is the belt to that pair of braces. */
+@media (hover: none) {
+  .tilt-active { transform: none; box-shadow: var(--lift-2); }
+  .tilt-sheen::after { display: none; }
+  .layer-1, .layer-2 { transform: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .tilt, .tilt-active { transform: none !important; transition: box-shadow .2s ease; }
@@ -142,6 +187,11 @@ body {
 .animate-rise      { animation: riseIn .45s cubic-bezier(.2, .8, .3, 1) both; }
 .animate-rise-slow { animation: riseIn .7s  cubic-bezier(.2, .8, .3, 1) both; }
 
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(24px) scale(.985); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
 @keyframes sweep {
   from { background-position: -180% 0; }
   to   { background-position: 180% 0; }
@@ -153,16 +203,23 @@ body {
 @layer components {
 
   /* ── Surfaces ──────────────────────────────────── */
+  /* Gloss is the first background layer, the body tint the second. Doing it
+     with stacked gradients rather than a ::before keeps the stacking context
+     clean — pseudo-elements fight with positioned children. */
   .panel {
     @apply relative rounded-[var(--radius-lg)] border;
-    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
     border-color: var(--edge);
     box-shadow: var(--lift-2);
   }
 
   .panel-flat {
     @apply relative rounded-[var(--radius)] border;
-    background: var(--surface);
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
     border-color: var(--edge);
     box-shadow: var(--lift-1);
   }
@@ -178,75 +235,94 @@ body {
   /* ── Buttons: a physical key with a hard bottom edge ── */
   .btn {
     @apply relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]
-           px-4 py-2.5 text-sm font-semibold select-none
-           transition-[transform,box-shadow,background] duration-150;
+           px-4 text-sm font-semibold select-none
+           transition-[transform,box-shadow,filter] duration-150;
+    min-height: var(--tap);
+    padding-block: .55rem;
     transform: translateY(0);
+    /* Kill the grey flash iOS paints over tapped controls. */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   .btn:active:not(:disabled) { transform: translateY(2px); }
   .btn:disabled { opacity: .55; cursor: not-allowed; }
-  .btn:focus-visible {
-    outline: 2px solid var(--brass);
-    outline-offset: 2px;
-  }
+  .btn:focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
   .btn-primary {
     color: #fff;
-    background: linear-gradient(180deg, var(--navy-lift) 0%, var(--navy) 55%, var(--navy-deep) 100%);
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, var(--navy-lift) 0%, var(--navy) 55%, var(--navy-deep) 100%);
     box-shadow:
       0 3px 0 var(--navy-deep),
-      0 5px 12px rgba(15, 33, 56, .32),
-      inset 0 1px 0 rgba(255, 255, 255, .22);
+      0 6px 14px rgba(13, 30, 51, .34),
+      inset 0 1px 0 rgba(255, 255, 255, .26);
   }
   .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
   .btn-primary:active:not(:disabled) {
     box-shadow:
       0 1px 0 var(--navy-deep),
-      0 2px 6px rgba(15, 33, 56, .3),
+      0 2px 6px rgba(13, 30, 51, .3),
       inset 0 2px 5px rgba(0, 0, 0, .28);
   }
 
   .btn-brass {
     color: #fff;
-    background: linear-gradient(180deg, var(--brass-lift) 0%, var(--brass) 55%, var(--brass-deep) 100%);
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, var(--brass-lift) 0%, var(--brass) 55%, var(--brass-deep) 100%);
     box-shadow:
       0 3px 0 var(--brass-deep),
-      0 5px 12px rgba(138, 98, 36, .35),
-      inset 0 1px 0 rgba(255, 255, 255, .32);
+      0 6px 14px rgba(130, 92, 32, .36),
+      inset 0 1px 0 rgba(255, 255, 255, .36);
   }
   .btn-brass:hover:not(:disabled) { filter: brightness(1.07); }
   .btn-brass:active:not(:disabled) {
     box-shadow:
       0 1px 0 var(--brass-deep),
-      0 2px 6px rgba(138, 98, 36, .3),
+      0 2px 6px rgba(130, 92, 32, .3),
       inset 0 2px 5px rgba(0, 0, 0, .25);
   }
 
   .btn-ghost {
     color: var(--ink-soft);
-    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
     border: 1px solid var(--edge);
-    box-shadow: 0 2px 0 var(--edge-strong), 0 3px 8px rgba(22, 32, 46, .07);
+    box-shadow: 0 2px 0 var(--edge-strong), 0 3px 8px rgba(20, 29, 41, .07);
   }
   .btn-ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--edge-strong); }
   .btn-ghost:active:not(:disabled) { box-shadow: 0 0 0 var(--edge-strong), var(--sunk); }
 
   .btn-danger {
     color: #fff;
-    background: linear-gradient(180deg, #d15b52 0%, #b8443c 55%, #94322b 100%);
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, #d15b52 0%, #b8443c 55%, #94322b 100%);
     box-shadow:
       0 3px 0 #94322b,
-      0 5px 12px rgba(148, 50, 43, .32),
-      inset 0 1px 0 rgba(255, 255, 255, .22);
+      0 6px 14px rgba(148, 50, 43, .34),
+      inset 0 1px 0 rgba(255, 255, 255, .24);
   }
   .btn-danger:hover:not(:disabled) { filter: brightness(1.07); }
 
-  .btn-sm { @apply px-3 py-1.5 text-xs; }
-  .btn-icon { @apply p-2; }
+  .btn-sm {
+    @apply px-3 text-xs;
+    min-height: 34px;
+    padding-block: .3rem;
+  }
+  .btn-icon { @apply px-0; width: var(--tap); }
 
   /* ── Inputs: a milled well ─────────────────────── */
   .input {
-    @apply w-full rounded-[var(--radius-sm)] px-3 py-2.5 text-sm outline-none
+    @apply w-full rounded-[var(--radius-sm)] px-3 outline-none
            transition-[box-shadow,border-color,background] duration-200;
+    /* 16px, not 14px: anything smaller makes iOS Safari zoom the viewport on
+       focus, and the user never gets it back. Stepped down on wider screens. */
+    font-size: 16px;
+    min-height: var(--tap);
+    padding-block: .55rem;
     background: var(--surface-sunk);
     border: 1px solid var(--edge-strong);
     box-shadow: var(--sunk);
@@ -258,13 +334,13 @@ body {
     background: var(--surface);
     border-color: var(--navy-lift);
     box-shadow:
-      inset 0 2px 4px rgba(22, 32, 46, .06),
-      0 0 0 3px rgba(46, 90, 150, .18);
+      inset 0 2px 4px rgba(20, 29, 41, .06),
+      0 0 0 3px rgba(47, 92, 153, .18);
   }
   .input:disabled { opacity: .6; cursor: not-allowed; }
   .input-error {
     border-color: #b8443c;
-    box-shadow: inset 0 2px 4px rgba(22, 32, 46, .06), 0 0 0 3px rgba(184, 68, 60, .16);
+    box-shadow: inset 0 2px 4px rgba(20, 29, 41, .06), 0 0 0 3px rgba(184, 68, 60, .16);
   }
 
   .label {
@@ -277,22 +353,35 @@ body {
   /* ── Badges: engraved pill ─────────────────────── */
   .badge {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 1px 1px rgba(22, 32, 46, .06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 1px 1px rgba(20, 29, 41, .06);
   }
 
   /* ── Tables ────────────────────────────────────── */
   .table-header {
-    @apply px-4 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em];
+    @apply px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] sm:px-4;
     color: var(--ink-faint);
     background: linear-gradient(180deg, var(--surface-sunk) 0%, var(--paper-deep) 100%);
     border-bottom: 1px solid var(--edge-strong);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+    white-space: nowrap;
   }
-  .table-cell { @apply px-4 py-3 text-sm; color: var(--ink-soft); }
+  .table-cell { @apply px-3 py-3 text-sm sm:px-4; color: var(--ink-soft); }
   .table-row { transition: background .15s ease, box-shadow .15s ease; }
   .table-row:hover {
     background: linear-gradient(90deg, rgba(184, 135, 59, .07), transparent 60%);
     box-shadow: inset 3px 0 0 var(--brass);
+  }
+
+  /* Right-edge fade telling a thumb there is more table off-screen. */
+  .table-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    background:
+      linear-gradient(90deg, var(--surface) 30%, rgba(255, 253, 248, 0)) left   center / 32px 100% no-repeat,
+      linear-gradient(90deg, rgba(255, 253, 248, 0), var(--surface) 70%) right  center / 32px 100% no-repeat,
+      radial-gradient(farthest-side at 0   50%, rgba(20, 29, 41, .13), transparent) left  center / 14px 100% no-repeat,
+      radial-gradient(farthest-side at 100% 50%, rgba(20, 29, 41, .13), transparent) right center / 14px 100% no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
 
   /* ── Skeleton ──────────────────────────────────── */
@@ -303,6 +392,15 @@ body {
     @apply rounded-md;
   }
 
+  /* Stat tiles. auto-fit means the row decides its own column count from the
+     space it has, so a phone gets two up and a desktop gets four without every
+     page carrying its own sm:/lg:/xl: breakpoint ladder. */
+  .stat-grid {
+    display: grid;
+    gap: .625rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
+  }
+
   /* ── Section heading with brass rule ───────────── */
   .rule-brass::after {
     content: '';
@@ -310,6 +408,21 @@ body {
     background: linear-gradient(90deg, var(--brass), transparent);
   }
 }
+
+/* Desktop can afford the tighter 14px type; phones cannot (see .input). */
+@media (min-width: 640px) {
+  .input { font-size: .875rem; }
+  .stat-grid { gap: 1rem; }
+}
+
+/* Coarse pointers get the 44px target Apple and Google both ask for. */
+@media (pointer: coarse) {
+  :root { --tap: 44px; }
+}
+
+/* Respect the notch / home indicator. */
+.safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-t { padding-top:    env(safe-area-inset-top,    0px); }
 
 /* ============================================================
    Print — receipts and report cards

@@ -2,7 +2,8 @@
 
 **Geethanjali Vidya Nilayam** | Peddawaltair, Visakhapatnam, Andhra Pradesh
 
-A comprehensive full-stack school management web application with iOS 27 liquid glass UI design.
+A full-stack school management web application — Supabase Auth and Postgres RLS
+behind a classical, glossy, mobile-first UI.
 
 ---
 
@@ -21,7 +22,9 @@ A comprehensive full-stack school management web application with iOS 27 liquid 
 
 - **Primary (Navy):** `#1e3a5f`
 - **Accent (Gold):** `#f59e0b`
-- **UI Style:** iOS 27 Liquid Glass Polished Design (see `src/styles/liquid-glass.css`)
+- **UI Style:** "Lacquer" — layered shadow depth, a small specular gloss band,
+  pointer-tracked 3D tilt on pointer devices. No blur-glass, no neon.
+  See `src/app/globals.css`.
 
 ---
 
@@ -32,7 +35,6 @@ A comprehensive full-stack school management web application with iOS 27 liquid 
 | Next.js 14 (App Router) | Frontend framework |
 | TypeScript | Type safety |
 | Tailwind CSS | Styling |
-| Liquid Glass CSS | iOS 27 Premium UI effects |
 | Supabase | Database + Auth + Storage |
 | Cloudflare Pages | Deployment |
 | Recharts | Data visualizations |
@@ -153,46 +155,32 @@ A parent or student only ever sees their own child/self — link them by setting
 
 ---
 
-## ✨ Recent Updates (June 24, 2026)
+## 🎨 Design system
 
-### iOS 27 Liquid Glass Polished UI System
-- Premium glassmorphic effects with backdrop blur
-- Liquid smooth animations (fade, float, glow, pulse)
-- Frosted glass variants (light, dark, containers)
-- Polished button styles with gradient effects
-- Enhanced stat cards with shimmer animations
-- Liquid badges (success, error, warning)
-- Responsive design with accessibility support
-
-**File:** `src/styles/liquid-glass.css`  
-**Commit:** `2b9aeccbb5b368c6c42ac75468e9901a1f6440d7`
-
-### Available CSS Classes
+All styling routes through CSS custom properties and component classes in
+`src/app/globals.css`; pages compose the primitives in `src/components/ui`.
 
 ```jsx
-// Glassmorphic containers
-<div className="liquid-glass rounded-2xl p-6">Content</div>
-<div className="frosted-card">Frosted</div>
-<div className="frosted-modal">Modal</div>
-
-// Buttons
-<button className="btn-liquid-primary">Primary Button</button>
-<button className="btn-liquid-glass">Glass Button</button>
-
-// Cards & Stats
-<div className="stat-card-liquid">Stat Card</div>
-<div className="card-liquid">Card with Animation</div>
-
-// Form Elements
-<input className="input-liquid" placeholder="Enter text..." />
-
-// Badges
-<span className="badge-liquid success">Success</span>
-<span className="badge-liquid error">Error</span>
-
-// Backgrounds
-<div className="bg-liquid-gradient">Animated Gradient</div>
+<div className="panel p-6">…</div>        {/* raised surface, gloss band     */}
+<div className="panel-flat p-4">…</div>   {/* one step down                  */}
+<div className="plaque p-4">…</div>       {/* engraved / inset               */}
+<button className="btn btn-primary" />    {/* navy key, hard bottom edge     */}
+<button className="btn btn-brass" />      {/* brass key                      */}
+<button className="btn btn-ghost" />      {/* paper key                      */}
+<input className="input" />               {/* milled well, 16px on mobile    */}
+<div className="stat-grid">…</div>        {/* auto-fitting tile row          */}
 ```
+
+Mobile-first specifics worth knowing before you edit:
+
+- `.input` is **16px** below the `sm` breakpoint on purpose — anything smaller
+  makes iOS Safari zoom the viewport on focus and never zoom back.
+- `--tap` is 40px, raised to 44px under `@media (pointer: coarse)`.
+- `Modal` renders as a bottom sheet under `sm`, a centred dialog above it.
+- `Tilt3D` no-ops for non-mouse pointers; a tap would otherwise leave the card
+  stuck at an angle.
+- Layout height uses `100dvh`, not `100vh`, so mobile Safari's URL bar does not
+  bury the last row of a table.
 
 ---
 
@@ -204,14 +192,18 @@ src/
 │   ├── dashboard/         # Dashboard layout
 │   ├── login/             # Authentication
 │   └── [modules]/         # Feature modules
-├── components/            # Reusable React components
-├── lib/                   # Utilities & helpers
-├── styles/                # Global & liquid glass styles
+├── components/
+│   ├── layout/            # Shell, sidebar, header
+│   └── ui/                # PageHeader, StatCard, Modal, TableShell, Tilt3D
+├── context/               # AuthContext
+├── lib/                   # supabase (browser), supabase-server, nav, grading
 └── types/                 # TypeScript type definitions
 
 supabase/
-├── schema.sql            # Database schema
-└── seed.sql              # Demo data
+├── schema.sql            # Full schema: tables, RLS policies, storage, indexes
+└── migrations/
+    └── 001_portal.sql    # Tightens student/attendance/results/fees RLS and
+                          # adds students.profile_id (run on existing installs)
 
 public/                   # Static assets
 ```
@@ -245,5 +237,5 @@ For issues, questions, or suggestions:
 
 ---
 
-**Last Updated:** June 24, 2026  
+**Last Updated:** 18 August 2026  
 **Version:** 0.1.0

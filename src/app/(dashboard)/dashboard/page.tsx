@@ -12,7 +12,7 @@ import {
 } from 'recharts'
 import { format, subDays, isWeekend } from 'date-fns'
 import { createClient } from '@/lib/supabase'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatCurrency, formatDate, callingName } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader, StatCard, EmptyState } from '@/components/ui'
 
@@ -142,7 +142,7 @@ export default function DashboardPage() {
     urgent: CHART.red, high: CHART.brass, medium: CHART.navy, low: CHART.slate,
   }
 
-  const firstName = profile?.full_name?.split(' ').slice(-1)[0] ?? ''
+  const firstName = callingName(profile?.full_name)
 
   return (
     <div className="space-y-5">
@@ -169,7 +169,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Stats ─────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="stat-grid">
         {loading || !stats ? (
           Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="panel p-5"><div className="skeleton h-12" /></div>

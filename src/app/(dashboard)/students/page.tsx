@@ -173,7 +173,7 @@ export default function StudentsPage() {
         )}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="stat-grid">
         <StatCard label="Total students" value={total} icon={Users} tone="navy" />
         <StatCard label="Active on this page" value={activeOnPage} icon={UserCheck} tone="green" />
         <StatCard label="Classes" value={classes.length} icon={GraduationCap} tone="brass" />

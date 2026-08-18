@@ -11,7 +11,10 @@ export default function DashboardShell({
   profile: Profile
   children: React.ReactNode
 }) {
-  const [open, setOpen] = useState(true)
+  // Closed is the honest first paint: the server has no idea how wide the
+  // screen is, and rendering open meant every phone flashed a full-screen
+  // scrim before the effect below could correct it.
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)')
@@ -22,11 +25,13 @@ export default function DashboardShell({
   }, [])
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--paper)' }}>
+    // h-dvh, not h-screen: 100vh on mobile Safari is taller than the visible
+    // area, which buries the last row of every table under the URL bar.
+    <div className="flex h-[100dvh] overflow-hidden">
       {open && (
         <div
           className="fixed inset-0 z-20 lg:hidden"
-          style={{ background: 'rgba(15,33,56,.45)' }}
+          style={{ background: 'rgba(13,30,51,.55)' }}
           onClick={() => setOpen(false)}
           aria-hidden
         />
@@ -44,8 +49,8 @@ export default function DashboardShell({
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header profile={profile} sidebarOpen={open} onMenuClick={() => setOpen(p => !p)} />
-        <main className="scrollbar-thin flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="mx-auto max-w-[1400px] space-y-5">{children}</div>
+        <main className="scrollbar-thin safe-b flex-1 overflow-y-auto px-3 py-4 sm:px-4 md:p-6">
+          <div className="mx-auto max-w-[1400px] space-y-4 md:space-y-5">{children}</div>
         </main>
       </div>
     </div>

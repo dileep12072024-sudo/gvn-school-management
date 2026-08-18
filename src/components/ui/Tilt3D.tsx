@@ -31,7 +31,9 @@ export default function Tilt3D({
 
   const onMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     const el = ref.current
-    if (!el) return
+    // A finger has no hover state, so a tap would leave the card stuck at an
+    // angle until the next tap elsewhere. Phones get the flat card.
+    if (!el || e.pointerType !== 'mouse') return
     const r = el.getBoundingClientRect()
     const px = (e.clientX - r.left) / r.width   // 0..1
     const py = (e.clientY - r.top) / r.height   // 0..1
@@ -53,7 +55,7 @@ export default function Tilt3D({
     <Tag
       ref={ref as any}
       onPointerMove={onMove}
-      onPointerEnter={() => setActive(true)}
+      onPointerEnter={e => { if (e.pointerType === 'mouse') setActive(true) }}
       onPointerLeave={reset}
       className={cn('tilt', active && 'tilt-active', sheen && 'tilt-sheen', className)}
       {...rest}

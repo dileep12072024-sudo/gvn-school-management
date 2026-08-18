@@ -125,7 +125,7 @@ export default function TeachersPage() {
         actions={<button onClick={openAdd} className="btn btn-brass"><Plus className="h-4 w-4" /> Add teacher</button>}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="stat-grid">
         <StatCard label="Total staff" value={rows.length} icon={Users} tone="navy" />
         <StatCard label="Active" value={active} icon={GraduationCap} tone="green" />
         <StatCard label="Subjects covered" value={subjects} icon={BookOpen} tone="brass" />
