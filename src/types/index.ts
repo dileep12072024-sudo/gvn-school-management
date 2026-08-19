@@ -1,14 +1,8 @@
-export type UserRole = 'organiser' | 'principal' | 'vice_principal' | 'teacher' | 'parent' | 'student'
-
-export interface Profile {
-  id: string
-  email: string
-  full_name: string
-  role: UserRole
-  phone?: string
-  avatar_url?: string
-  created_at: string
-}
+// Roles are defined once in lib/nav.ts (the route-permission table) so the
+// sidebar, the middleware and these types cannot drift apart.
+import type { UserRole } from '@/lib/nav'
+export type { UserRole }
+export type { Profile } from '@/lib/supabase'
 
 export interface Student {
   id: string

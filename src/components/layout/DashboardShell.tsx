@@ -3,60 +3,54 @@
 import { useState, useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Header from './Header'
-import type { MockProfile } from '@/lib/mock-auth'
+import type { Profile } from '@/lib/supabase'
 
 export default function DashboardShell({
-  profile,
-  children,
+  profile, children,
 }: {
-  profile: MockProfile
+  profile: Profile
   children: React.ReactNode
 }) {
-  const [open, setOpen] = useState(true)
+  // Closed is the honest first paint: the server has no idea how wide the
+  // screen is, and rendering open meant every phone flashed a full-screen
+  // scrim before the effect below could correct it.
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
-      setOpen(false)
-    }
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setOpen(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
   }, [])
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ background: 'linear-gradient(135deg, #eef2f7 0%, #e8f0f9 50%, #eef2f7 100%)' }}
-    >
-      {/* Mobile backdrop */}
+    // h-dvh, not h-screen: 100vh on mobile Safari is taller than the visible
+    // area, which buries the last row of every table under the URL bar.
+    <div className="flex h-[100dvh] overflow-hidden">
       {open && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-20 lg:hidden"
+          className="fixed inset-0 z-20 lg:hidden"
+          style={{ background: 'rgba(13,30,51,.55)' }}
           onClick={() => setOpen(false)}
+          aria-hidden
         />
       )}
 
-      {/* Sidebar wrapper */}
       <div
         className={[
-          'fixed inset-y-0 left-0 z-30',
+          'fixed inset-y-0 left-0 z-30 transition-transform duration-300 ease-out',
           'lg:relative lg:inset-auto lg:z-auto',
-          'transition-transform duration-300 ease-in-out',
           open ? 'translate-x-0' : '-translate-x-full lg:hidden',
         ].join(' ')}
       >
-        <Sidebar
-          role={(profile.role as any) ?? 'student'}
-          onClose={() => setOpen(false)}
-        />
+        <Sidebar role={profile.role} onClose={() => setOpen(false)} />
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <Header
-          profile={profile}
-          sidebarOpen={open}
-          onMenuClick={() => setOpen(prev => !prev)}
-        />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <Header profile={profile} sidebarOpen={open} onMenuClick={() => setOpen(p => !p)} />
+        <main className="scrollbar-thin safe-b flex-1 overflow-y-auto px-3 py-4 sm:px-4 md:p-6">
+          <div className="mx-auto max-w-[1400px] space-y-4 md:space-y-5">{children}</div>
         </main>
       </div>
     </div>

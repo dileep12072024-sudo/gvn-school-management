@@ -2,30 +2,26 @@ export const dynamic = 'force-dynamic'
 export const runtime = 'edge'
 
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
-import { SESSION_COOKIE } from '@/lib/mock-auth'
-import type { MockProfile } from '@/lib/mock-auth'
+import { headers } from 'next/headers'
+import { getProfile } from '@/lib/supabase-server'
+import { canAccess, landingFor } from '@/lib/nav'
 import { AuthProvider } from '@/context/AuthContext'
 import DashboardShell from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = cookies()
-  const sessionCookie = cookieStore.get(SESSION_COOKIE)
-  if (!sessionCookie?.value) redirect('/login')
-
-  let profile: MockProfile | null = null
-  try {
-    profile = JSON.parse(sessionCookie!.value) as MockProfile
-  } catch {
-    redirect('/login')
-  }
+  const profile = await getProfile()
   if (!profile) redirect('/login')
+
+  // Middleware proves you are signed in; this proves you may see *this* route.
+  // RLS is still the real boundary — this just avoids rendering a dead page.
+  const pathname = headers().get('x-pathname') ?? headers().get('x-invoke-path') ?? ''
+  if (pathname && !canAccess(profile.role, pathname)) {
+    redirect(landingFor(profile.role))
+  }
 
   return (
     <AuthProvider initialProfile={profile}>
-      <DashboardShell profile={profile}>
-        {children}
-      </DashboardShell>
+      <DashboardShell profile={profile}>{children}</DashboardShell>
     </AuthProvider>
   )
 }

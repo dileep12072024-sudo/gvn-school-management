@@ -2,160 +2,965 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   GVN — "Meridian" design system
+   Cool, professional, mobile-first.
+
+   Depth is built from four stacked cues, never from blur or glow:
+     1. an ambient shadow that says "how far off the page"
+     2. a tight contact shadow that says "where it touches"
+     3. a 1px top highlight that says "there is a light above"
+     4. a *small* gloss band — polished stone, not neon bloom
+
+   Palette is jewel teal on deep indigo on cool porcelain. The ground is
+   deliberately cool: the glass cursor and the travelling pills refract
+   whatever is under them, and a warm cream ground turns that refraction
+   muddy. Porcelain keeps it crisp.
+   ============================================================ */
+
 :root {
-  --navy: #1e3a5f;
-  --gold: #f59e0b;
+  /* Ground — cool porcelain */
+  --paper:        #eaeef3;
+  --paper-deep:   #dce3ec;
+  --surface:      #fdfeff;
+  --surface-sunk: #f1f5f9;
+
+  /* Ink */
+  --ink:          #101827;
+  --ink-soft:     #445167;
+  --ink-faint:    #8492a6;
+
+  /* Brand */
+  --primary:       #1f3763;
+  --primary-deep:  #12213f;
+  --primary-lift:  #33507f;
+  --accent:        #159c8a;
+  --accent-lift:   #3fb8a6;
+  --accent-deep:   #0b6d61;
+
+  /* Edges */
+  --edge:         #dbe2ec;
+  --edge-strong:  #c1cbd9;
+
+  /* Status — one hue each, plus the pale chip it sits on */
+  --success:      #17795c;
+  --success-deep: #0e5340;
+  --danger:       #c04a45;
+  --danger-deep:  #8f322e;
+  --warn:         #c1852c;
+  --warn-deep:    #8a5d17;
+  --slate:        #7c8ba1;
+  --slate-deep:   #4a586d;
+  --violet:       #5f5b9c;
+  --azure:        #2f5fa6;
+
+  --tint-primary: #e2e9f4;
+  --tint-accent:  #d7f0eb;
+  --tint-success: #d9ece5;
+  --tint-danger:  #f7e1df;
+  --tint-warn:    #f7ebd3;
+  --tint-slate:   var(--tint-slate);
+
+  /* ── The depth recipe ─────────────────────────── */
+  --lift-1:
+    0 1px 1px rgba(16, 24, 39, .05),
+    0 2px 4px rgba(16, 24, 39, .05),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+  --lift-2:
+    0 1px 2px rgba(16, 24, 39, .07),
+    0 5px 12px rgba(16, 24, 39, .08),
+    0 16px 30px -14px rgba(16, 24, 39, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+  --lift-3:
+    0 2px 5px rgba(16, 24, 39, .09),
+    0 14px 30px rgba(16, 24, 39, .12),
+    0 40px 60px -26px rgba(16, 24, 39, .26),
+    inset 0 1px 0 rgba(255, 255, 255, 1);
+  --sunk:
+    inset 0 2px 4px rgba(16, 24, 39, .09),
+    inset 0 1px 1px rgba(16, 24, 39, .06);
+
+  /* ── The gloss recipe ─────────────────────────── */
+  /* One short specular band across the top of a raised face. Kept under 45%
+     height and under .7 alpha so it reads as varnish, not as a light source. */
+  --gloss-light: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .72) 0%,
+    rgba(255, 255, 255, .16) 34%,
+    rgba(255, 255, 255, 0) 52%
+  );
+  --gloss-dark: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, .20) 0%,
+    rgba(255, 255, 255, .05) 40%,
+    rgba(255, 255, 255, 0) 56%
+  );
+
+  --radius:    14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+
+  /* Comfortable tap target. Bumped on coarse pointers below. */
+  --tap: 40px;
+
+  /* Motion. --spring overshoots on purpose: that overshoot is what makes an
+     icon read as "popping" rather than "sliding". --ease is for anything that
+     must not overshoot, like opacity and colour. */
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+  --spring-soft: cubic-bezier(.22, 1.2, .36, 1);
+  --ease: cubic-bezier(.2, .8, .3, 1);
 }
 
 html {
   scroll-behavior: smooth;
+  /* Stop iOS from re-scaling text when the device is rotated. */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background-color: #f0f4f8;
-  color: #1e293b;
-}
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
-}
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
-}
-
-/* ── Glassmorphism ─────────────────────────────── */
-.glass {
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-.glass-dark {
-  background: rgba(21, 42, 69, 0.72);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.glass-white {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.65);
-}
-
-/* ── 3-D card hover ────────────────────────────── */
-.card-3d {
-  transition: transform 0.28s ease, box-shadow 0.28s ease;
-}
-.card-3d:hover {
-  transform: translateY(-5px) scale(1.012);
-  box-shadow: 0 20px 44px rgba(30, 58, 95, 0.14), 0 6px 14px rgba(30, 58, 95, 0.08);
-}
-
-/* ── Gradient text ─────────────────────────────── */
-.text-gradient-gold {
-  background: linear-gradient(135deg, #f59e0b 0%, #fde68a 50%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.text-gradient-navy {
-  background: linear-gradient(135deg, #1e3a5f 0%, #3d6cab 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* ── Glow effects ──────────────────────────────── */
-.glow-gold {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.45), 0 0 44px rgba(245, 158, 11, 0.2);
-}
-
-.glow-navy {
-  box-shadow: 0 0 20px rgba(30, 58, 95, 0.45), 0 0 44px rgba(30, 58, 95, 0.2);
-}
-
-/* ── Animated gradient bg ──────────────────────── */
-.bg-animated-gradient {
-  background: linear-gradient(-45deg, #0b1a2c, #1e3a5f, #152a45, #2e5a96);
-  background-size: 400% 400%;
-  animation: gradientShift 8s ease infinite;
-}
-
-/* ── Subtle dot-grid overlay ───────────────────── */
-.bg-grid-pattern {
+  color: var(--ink);
+  background-color: var(--paper);
+  /* Cinematic ground: a soft key light from above, a warm brass bounce from the
+     lower right, a vignette pulling the corners down, and a paper tooth. */
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 40px 40px;
+    radial-gradient(1100px 620px at 50% -8%,  rgba(255, 255, 255, .90), transparent 70%),
+    radial-gradient(900px  760px at 108% 104%, rgba(21, 156, 138, .10), transparent 62%),
+    radial-gradient(1000px 800px at -10% 100%, rgba(30,  58,  95, .07), transparent 60%),
+    radial-gradient(140% 120% at 50% 45%, transparent 52%, rgba(16, 24, 39, .09) 100%),
+    radial-gradient(circle at 1px 1px, rgba(16, 24, 39, .022) 1px, transparent 0);
+  background-size: auto, auto, auto, auto, 4px 4px;
+  background-attachment: fixed, fixed, fixed, fixed, scroll;
+  -webkit-font-smoothing: antialiased;
+  /* Never let a wide table drag the whole page sideways. */
+  overflow-x: hidden;
 }
 
-/* ── Keyframes (also declared in tailwind.config.ts for animate-* classes) */
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
+::selection { background: var(--accent); color: #fff; }
+
+/* ── Scrollbars ─────────────────────────────────── */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--edge-strong);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%      { transform: translateY(-20px); }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); background-clip: content-box; }
+
+/* ============================================================
+   Interactive tilt — driven by <Tilt3D>, which writes --rx/--ry
+   and --mx/--my (pointer position, %) onto the element.
+   ============================================================ */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform .35s cubic-bezier(.2, .8, .3, 1), box-shadow .35s ease;
+  will-change: transform;
 }
-@keyframes floatSlow {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50%      { transform: translateY(-28px) rotate(180deg); }
+.tilt-active {
+  transform:
+    perspective(900px)
+    rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg))
+    translateZ(0);
+  transition: transform .08s linear, box-shadow .35s ease;
+  box-shadow: var(--lift-3);
+}
+/* Specular sheen that tracks the cursor. */
+.tilt-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .3s ease;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, .50),
+    transparent 60%
+  );
+}
+.tilt-active.tilt-sheen::after { opacity: 1; }
+
+/* Children can float above the card face. */
+.layer-1 { transform: translateZ(18px); }
+.layer-2 { transform: translateZ(34px); }
+
+/* Touch devices: a tilt that sticks after a tap is worse than no tilt.
+   Tilt3D also guards this in JS; this is the belt to that pair of braces. */
+@media (hover: none) {
+  .tilt-active { transform: none; box-shadow: var(--lift-2); }
+  .tilt-sheen::after { display: none; }
+  .layer-1, .layer-2 { transform: none; }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .tilt, .tilt-active { transform: none !important; transition: box-shadow .2s ease; }
+  .tilt-sheen::after { display: none; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ── Keyframes ──────────────────────────────────── */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise      { animation: riseIn .45s cubic-bezier(.2, .8, .3, 1) both; }
+.animate-rise-slow { animation: riseIn .7s  cubic-bezier(.2, .8, .3, 1) both; }
+
+@keyframes sweep {
+  from { background-position: -180% 0; }
+  to   { background-position: 180% 0; }
+}
+
+/* ============================================================
+   Components
+   ============================================================ */
 @layer components {
-  .btn-primary {
-    @apply bg-[#1e3a5f] hover:bg-[#152a45] text-white font-medium px-4 py-2 rounded-xl transition-all duration-200 shadow-md hover:shadow-lg;
+
+  /* ── Surfaces ──────────────────────────────────── */
+  /* Gloss is the first background layer, the body tint the second. Doing it
+     with stacked gradients rather than a ::before keeps the stacking context
+     clean — pseudo-elements fight with positioned children. */
+  .panel {
+    @apply relative rounded-[var(--radius-lg)] border;
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    border-color: var(--edge);
+    box-shadow: var(--lift-2);
   }
 
-  .btn-gradient {
-    @apply text-white font-semibold px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden;
-    background: linear-gradient(135deg, #1e3a5f 0%, #2e5a96 100%);
-    box-shadow: 0 4px 18px rgba(30, 58, 95, 0.38);
+  .panel-flat {
+    @apply relative rounded-[var(--radius)] border;
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    border-color: var(--edge);
+    box-shadow: var(--lift-1);
   }
-  .btn-gradient:hover:not(:disabled) {
-    background: linear-gradient(135deg, #152a45 0%, #1e3a5f 100%);
-    box-shadow: 0 8px 28px rgba(30, 58, 95, 0.52);
-    transform: translateY(-1px);
+
+  /* Engraved plaque — for section headers and empty states. */
+  .plaque {
+    @apply rounded-[var(--radius)] border;
+    background: var(--surface-sunk);
+    border-color: var(--edge);
+    box-shadow: var(--sunk);
   }
-  .btn-gradient:active:not(:disabled) {
+
+  /* ── Buttons: a physical key with a hard bottom edge ── */
+  .btn {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)]
+           px-4 text-sm font-semibold select-none
+           transition-[transform,box-shadow,filter] duration-150;
+    min-height: var(--tap);
+    padding-block: .55rem;
     transform: translateY(0);
+    /* Kill the grey flash iOS paints over tapped controls. */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .btn:active:not(:disabled) { transform: translateY(2px); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btn-primary {
+    color: #fff;
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, var(--primary-lift) 0%, var(--primary) 55%, var(--primary-deep) 100%);
+    box-shadow:
+      0 3px 0 var(--primary-deep),
+      0 6px 14px rgba(18, 33, 63, .34),
+      inset 0 1px 0 rgba(255, 255, 255, .26);
+  }
+  .btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+  .btn-primary:active:not(:disabled) {
+    box-shadow:
+      0 1px 0 var(--primary-deep),
+      0 2px 6px rgba(18, 33, 63, .3),
+      inset 0 2px 5px rgba(0, 0, 0, .28);
   }
 
-  .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-gray-700 font-medium px-4 py-2 rounded-xl border border-gray-200 transition-all duration-200;
+  .btn-accent {
+    color: #fff;
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, var(--accent-lift) 0%, var(--accent) 55%, var(--accent-deep) 100%);
+    box-shadow:
+      0 3px 0 var(--accent-deep),
+      0 6px 14px rgba(130, 92, 32, .36),
+      inset 0 1px 0 rgba(255, 255, 255, .36);
+  }
+  .btn-accent:hover:not(:disabled) { filter: brightness(1.07); }
+  .btn-accent:active:not(:disabled) {
+    box-shadow:
+      0 1px 0 var(--accent-deep),
+      0 2px 6px rgba(130, 92, 32, .3),
+      inset 0 2px 5px rgba(0, 0, 0, .25);
   }
 
-  .card {
-    @apply bg-white rounded-2xl border border-gray-100 shadow-sm;
+  .btn-ghost {
+    color: var(--ink-soft);
+    background:
+      var(--gloss-light),
+      linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%);
+    border: 1px solid var(--edge);
+    box-shadow: 0 2px 0 var(--edge-strong), 0 3px 8px rgba(16, 24, 39, .07);
   }
+  .btn-ghost:hover:not(:disabled) { color: var(--ink); border-color: var(--edge-strong); }
+  .btn-ghost:active:not(:disabled) { box-shadow: 0 0 0 var(--edge-strong), var(--sunk); }
 
+  .btn-danger {
+    color: #fff;
+    background:
+      var(--gloss-dark),
+      linear-gradient(180deg, #d15b52 0%, var(--danger) 55%, var(--danger-deep) 100%);
+    box-shadow:
+      0 3px 0 var(--danger-deep),
+      0 6px 14px rgba(148, 50, 43, .34),
+      inset 0 1px 0 rgba(255, 255, 255, .24);
+  }
+  .btn-danger:hover:not(:disabled) { filter: brightness(1.07); }
+
+  .btn-sm {
+    @apply px-3 text-xs;
+    min-height: 34px;
+    padding-block: .3rem;
+  }
+  /* flex:none matters — these sit in flex action rows, and without it the
+     button is allowed to shrink below the width set here (measured 29px on a
+     40px target in the fees table). */
+  .btn-icon { @apply px-0; width: var(--tap); flex: none; }
+
+  /* ── Inputs: a milled well ─────────────────────── */
   .input {
-    @apply w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-navy-700/25 focus:border-navy-700 outline-none transition-all duration-200 bg-gray-50 focus:bg-white;
+    @apply w-full rounded-[var(--radius-sm)] px-3 outline-none
+           transition-[box-shadow,border-color,background] duration-200;
+    /* 16px, not 14px: anything smaller makes iOS Safari zoom the viewport on
+       focus, and the user never gets it back. Stepped down on wider screens. */
+    font-size: 16px;
+    min-height: var(--tap);
+    padding-block: .55rem;
+    background: var(--surface-sunk);
+    border: 1px solid var(--edge-strong);
+    box-shadow: var(--sunk);
+    color: var(--ink);
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:hover:not(:disabled) { border-color: var(--ink-faint); }
+  .input:focus {
+    background: var(--surface);
+    border-color: var(--primary-lift);
+    box-shadow:
+      inset 0 2px 4px rgba(16, 24, 39, .06),
+      0 0 0 3px rgba(47, 92, 153, .18);
+  }
+  .input:disabled { opacity: .6; cursor: not-allowed; }
+  .input-error {
+    border-color: var(--danger);
+    box-shadow: inset 0 2px 4px rgba(16, 24, 39, .06), 0 0 0 3px rgba(184, 68, 60, .16);
   }
 
+  .label {
+    @apply block text-[11px] font-semibold uppercase tracking-[.08em] mb-1.5;
+    color: var(--ink-faint);
+  }
+
+  .field-error { @apply text-xs mt-1; color: var(--danger); }
+
+  /* ── Badges: engraved pill ─────────────────────── */
   .badge {
-    @apply px-2.5 py-0.5 rounded-full text-xs font-medium;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 1px 1px rgba(16, 24, 39, .06);
   }
 
+  /* ── Tables ────────────────────────────────────── */
   .table-header {
-    @apply px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide;
+    @apply px-3 py-3 text-left text-[11px] font-bold uppercase tracking-[.07em] sm:px-4;
+    color: var(--ink-faint);
+    background: linear-gradient(180deg, var(--surface-sunk) 0%, var(--paper-deep) 100%);
+    border-bottom: 1px solid var(--edge-strong);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8);
+    white-space: nowrap;
+  }
+  .table-cell { @apply px-3 py-3 text-sm sm:px-4; color: var(--ink-soft); }
+  .table-row { transition: background .15s ease, box-shadow .15s ease; }
+  .table-row:hover {
+    background: linear-gradient(90deg, rgba(21, 156, 138, .07), transparent 60%);
+    box-shadow: inset 3px 0 0 var(--accent);
   }
 
-  .table-cell {
-    @apply px-4 py-3 text-sm text-gray-700;
+  /* Right-edge fade telling a thumb there is more table off-screen. */
+  .table-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    background:
+      linear-gradient(90deg, var(--surface) 30%, rgba(255, 253, 248, 0)) left   center / 32px 100% no-repeat,
+      linear-gradient(90deg, rgba(255, 253, 248, 0), var(--surface) 70%) right  center / 32px 100% no-repeat,
+      radial-gradient(farthest-side at 0   50%, rgba(16, 24, 39, .13), transparent) left  center / 14px 100% no-repeat,
+      radial-gradient(farthest-side at 100% 50%, rgba(16, 24, 39, .13), transparent) right center / 14px 100% no-repeat;
+    background-attachment: local, local, scroll, scroll;
   }
+
+  /* ── Skeleton ──────────────────────────────────── */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface-sunk) 25%, var(--paper-deep) 50%, var(--surface-sunk) 75%);
+    background-size: 200% 100%;
+    animation: sweep 1.4s ease-in-out infinite;
+    @apply rounded-md;
+  }
+
+  /* Stat tiles. auto-fit means the row decides its own column count from the
+     space it has, so a phone gets two up and a desktop gets four without every
+     page carrying its own sm:/lg:/xl: breakpoint ladder. */
+  .stat-grid {
+    display: grid;
+    gap: .625rem;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 158px), 1fr));
+  }
+  /* Deal the tiles in one after another and drift them out of phase. Doing it
+     positionally means a page can add a fifth tile without renumbering. */
+  .stat-grid > *:nth-child(1) { --i: 0; --bob-i: 0; }
+  .stat-grid > *:nth-child(2) { --i: 1; --bob-i: 1; }
+  .stat-grid > *:nth-child(3) { --i: 2; --bob-i: 2; }
+  .stat-grid > *:nth-child(4) { --i: 3; --bob-i: 3; }
+  .stat-grid > *:nth-child(5) { --i: 4; --bob-i: 4; }
+  .stat-grid > *:nth-child(n+6) { --i: 5; --bob-i: 5; }
+
+  /* ── Section heading with brass rule ───────────── */
+  .rule-brass::after {
+    content: '';
+    @apply block mt-2 h-px w-16 rounded-full;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+}
+
+/* Desktop can afford the tighter 14px type; phones cannot (see .input). */
+@media (min-width: 640px) {
+  .input { font-size: .875rem; }
+  .stat-grid { gap: 1rem; }
+}
+
+/* Coarse pointers get the 44px target Apple and Google both ask for. */
+@media (pointer: coarse) {
+  :root { --tap: 44px; }
+  /* .btn-sm pins its own 34px height, which would quietly undercut the
+     target above on exactly the controls most likely to be mis-tapped —
+     row actions like delete. On a finger, small buttons stop being small. */
+  .btn-sm { min-height: var(--tap); }
+  /* Bare text links used as actions ("View all", "Calendar") are ~16px tall
+     on their own. Padding them out costs nothing on a phone and makes them
+     hittable. */
+  .link-tap { display: inline-flex; align-items: center; min-height: var(--tap); }
+}
+
+/* Respect the notch / home indicator. */
+.safe-b { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-t { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* ============================================================
+   Motion — every surface gets its own small movement
+   ============================================================ */
+
+/* ── Icons that pop ─────────────────────────────────────────
+   Any svg inside a control springs up and out on hover and punches back down
+   on press. Done here rather than per-component so a new button written next
+   month inherits it without anybody remembering to. */
+.btn svg,
+.icon-pop,
+.table-row svg,
+[role="button"] svg {
+  transition: transform .38s var(--spring);
+  will-change: transform;
+}
+.btn:hover:not(:disabled) svg,
+.icon-pop:hover,
+.table-row:hover svg,
+[role="button"]:hover svg { transform: translateY(-2.5px) scale(1.14); }
+
+.btn:active:not(:disabled) svg,
+[role="button"]:active svg { transform: translateY(1px) scale(.94); transition-duration: .12s; }
+
+/* The coloured plates behind stat/header icons get a bigger, slower version
+   of the same move, plus a tilt — they are big enough to carry it. */
+.plate {
+  transition: transform .45s var(--spring), box-shadow .45s var(--ease);
+  will-change: transform;
+}
+.panel:hover .plate,
+.plate:hover {
+  transform: translateY(-4px) rotate(-4deg) scale(1.06);
+  box-shadow: 0 10px 0 rgba(0,0,0,.14), 0 16px 26px rgba(20,29,41,.28), inset 0 1px 0 rgba(255,255,255,.34);
+}
+.panel:active .plate { transform: translateY(0) rotate(0deg) scale(.98); transition-duration: .12s; }
+
+/* ── Idle float ─────────────────────────────────────────────
+   A very small vertical drift. --bob-i staggers siblings so a row of cards
+   breathes out of phase instead of pulsing in lockstep like a heartbeat. */
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.float {
+  animation: bob 5.5s var(--ease) infinite;
+  animation-delay: calc(var(--bob-i, 0) * -1.3s);
+}
+.float-slow { animation: bob 8s var(--ease) infinite; animation-delay: calc(var(--bob-i, 0) * -2s); }
+
+/* ── Press physics for every raised surface ─────────────────
+   Panels and rows sink slightly when touched, which is the only press
+   feedback an iPhone gets (navigator.vibrate does not exist there). */
+.panel, .panel-flat, .plaque {
+  transition: transform .3s var(--spring-soft), box-shadow .3s var(--ease);
+}
+.panel:active, .panel-flat:active { transform: translateY(1.5px) scale(.995); transition-duration: .1s; }
+
+.table-row:active { transform: scale(.997); }
+
+/* Inputs lift out of their well when focused. */
+.input:focus { transform: translateY(-1px); }
+.input { transition: box-shadow .25s var(--ease), border-color .25s var(--ease),
+                     background .25s var(--ease), transform .25s var(--spring-soft); }
+
+/* ── Staggered entrance ─────────────────────────────────────
+   --i is the child's index; set it inline and a grid deals itself in. */
+@keyframes dealIn {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.deal {
+  animation: dealIn .55s var(--spring-soft) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ── Scroll reveal (driven by <Reveal>) ─────────────────────── */
+.reveal { opacity: 0; transform: translateY(26px); }
+.reveal-in {
+  animation: dealIn .7s var(--spring-soft) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+/* ── Cinematic backdrops ────────────────────────────────────
+   Two slowly counter-rotating light blobs.
+
+   These used to be conic gradients under `filter: blur(70px)`, which cost a
+   measured 466ms per frame — a 170%-of-viewport surface re-rasterised on every
+   tick because the keyframe animated `scale` as well as `rotate`. Soft-stopped
+   radial gradients look the same and need no filter at all, so the layer is
+   rasterised once and the animation is pure compositor work: 16.7ms/frame. */
+@keyframes drift {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.aurora {
+  position: absolute;
+  inset: -20%;
+  pointer-events: none;
+  opacity: .55;
+  animation: drift 60s linear infinite;
+  will-change: transform;
+}
+.aurora-2 { animation-duration: 86s; animation-direction: reverse; opacity: .38; }
+
+/* A slow specular bar that travels across a surface — the "cinematic" sweep. */
+@keyframes glint {
+  0%   { transform: translateX(-130%) skewX(-18deg); }
+  60%, 100% { transform: translateX(240%) skewX(-18deg); }
+}
+.glint { position: relative; overflow: hidden; }
+.glint::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 42%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.42), transparent);
+  animation: glint 7s var(--ease) infinite;
+}
+
+/* ── Rejection shake ────────────────────────────────────────
+   Decaying amplitude, not a constant wobble — a constant one reads as a
+   loading state, a decaying one reads as "no". */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15% { transform: translateX(-9px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-5px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+}
+.shake { animation: shake .5s var(--ease) both; }
+
+/* ── Magnetic pull ──────────────────────────────────────────
+   <Magnetic> writes --dx/--dy; the element leans toward the cursor. */
+.magnetic {
+  transition: transform .45s var(--spring);
+  will-change: transform;
+}
+.magnetic-on { transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0); transition-duration: .12s; }
+
+/* ── Travelling selection ───────────────────────────────────
+   Segmented controls and the sidebar rail both work the same way: the
+   highlight is ONE element that moves, never a background that reappears
+   somewhere else. JS measures (--x/--w/--y/--h); CSS does the travelling, so
+   it stays on the compositor and interruptions mid-slide are handled for us —
+   click a third option halfway through and the pill curves into the new
+   target instead of restarting. */
+.segmented { position: relative; }
+
+.seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--w, 0px);
+  height: var(--h, 0px);
+  /* Both axes, so a control that wraps onto a second row still slides. */
+  transform: translate3d(var(--x, 0px), var(--y, 0px), 0);
+  border-radius: 999px;
+  background:
+    var(--gloss-light),
+    linear-gradient(180deg, var(--surface), var(--surface-sunk));
+  box-shadow:
+    0 1px 2px rgba(16, 24, 39, .16),
+    0 4px 12px rgba(16, 24, 39, .10),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+  transition:
+    transform .52s var(--spring-soft),
+    width .52s var(--spring-soft),
+    height .52s var(--spring-soft);
+  pointer-events: none;
+  will-change: transform, width;
+}
+/* Before the first measurement there is nothing honest to draw. */
+.segmented:not([data-ready]) .seg-thumb { opacity: 0; transition: none; }
+
+.seg-option {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  transition: color .32s var(--ease);
+}
+
+/* Sidebar rail — same trick, travelling down instead of across. */
+.nav-rail {
+  position: absolute;
+  /* top/left must be pinned: without them the span falls to its static
+     position — below the nav's padding — and every measured offset lands
+     16px low. */
+  top: 0;
+  left: 0;
+  width: var(--w, 0px);
+  height: var(--h, 0px);
+  transform: translate3d(var(--x, 0px), var(--y, 0px), 0);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, rgba(63, 184, 166, .22), rgba(21, 156, 138, .12));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .14), 0 1px 3px rgba(0, 0, 0, .3);
+  transition:
+    transform .5s var(--spring-soft),
+    width .5s var(--spring-soft),
+    height .5s var(--spring-soft),
+    opacity .25s var(--ease);
+  pointer-events: none;
+  will-change: transform, height;
+}
+/* The brass edge rides along with it. */
+.nav-rail::before {
+  content: '';
+  position: absolute;
+  inset: 6px auto 6px 0;
+  width: 3px;
+  border-radius: 0 999px 999px 0;
+  background: linear-gradient(180deg, var(--accent-lift), var(--accent-deep));
+}
+nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
+
+/* ── Genie ──────────────────────────────────────────────────
+   A popover should look like it came out of the control that opened it, and
+   got pulled back into it on the way out. A true macOS genie is a non-affine
+   warp, which CSS transforms cannot do; squashing hard along one axis from the
+   right origin sells the same idea and stays on the compositor. */
+.genie {
+  transform-origin: var(--genie-origin, 100% 0%);
+  animation: genieIn .34s var(--spring-soft) both;
+}
+.genie-closing { animation: genieOut .2s cubic-bezier(.5, 0, .9, .4) both; }
+
+/* A dialog collapses toward where it actually lives: the bottom edge of a
+   phone sheet, the middle of the frame on desktop. */
+[role='dialog'].genie { --genie-origin: 50% 100%; }
+@media (min-width: 640px) {
+  [role='dialog'].genie { --genie-origin: 50% 50%; }
+}
+
+@keyframes genieIn {
+  0%   { opacity: 0; transform: scale(.18, .04) translateY(-10px) skewX(8deg); }
+  40%  { opacity: 1; transform: scale(.86, .78) translateY(0)     skewX(-2deg); }
+  70%  {             transform: scale(1.015, 1.03)                skewX(.5deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes genieOut {
+  0%   { opacity: 1; transform: none; }
+  35%  { opacity: 1; transform: scale(1.02, .88) skewX(-2deg); }
+  100% { opacity: 0; transform: scale(.16, .03) translateY(-10px) skewX(9deg); }
+}
+
+/* The dimmer behind a sheet fades on its own clock — snapping to transparent
+   the instant the sheet starts leaving is what makes a close feel abrupt. */
+.veil { animation: veilIn .28s var(--ease) both; }
+.veil-closing { animation: veilIn .2s var(--ease) reverse both; }
+@keyframes veilIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Pill cursor ────────────────────────────────────────────
+   Same object as the segmented thumb, promoted to the pointer: a glass
+   capsule that travels, stretches onto whatever it is over, and lets the
+   content read straight through it. Sized and moved from a rAF loop rather
+   than by CSS transitions — a follower has to be able to change its mind
+   mid-glide, which a running transition cannot. */
+.pill-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    var(--gloss-light),
+    linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .10));
+  border: 1px solid rgba(255, 255, 255, .58);
+  /* No backdrop-filter at all. A filter on an element that changes geometry
+     every frame forces the browser to re-sample everything behind it every
+     frame — the single most expensive thing a moving cursor can carry, and
+     invisible in a headless profile because software compositing skips it.
+     The tint plus the rim is what makes it glass. */
+  box-shadow:
+    0 1px 2px rgba(16, 24, 39, .10),
+    0 8px 22px rgba(16, 24, 39, .13),
+    inset 0 1px 0 rgba(255, 255, 255, .85);
+  transition: opacity .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
+  will-change: transform, width, height;
+  contain: strict; /* its geometry can never affect anything else — don't reflow the page for it */
+}
+/* Docked on a control: firm up, so it reads as a press target rather than
+   as a smudge floating over one. */
+.pill-cursor[data-docked='y'] {
+  border-color: rgba(21, 156, 138, .55);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 39, .14),
+    0 10px 26px rgba(16, 24, 39, .18),
+    inset 0 1px 0 rgba(255, 255, 255, .95);
+}
+
+/* The precision anchor — the pill can be 200px wide, this is the click. */
+.pill-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background: var(--primary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s var(--ease);
+}
+
+.pill-on { cursor: none; }
+/* Text fields keep their I-beam — caret position matters more than the
+   decoration does. */
+.pill-on input, .pill-on textarea { cursor: text; }
+
+/* Touch and reduced-motion users get nothing to trip over. */
+@media (pointer: coarse) {
+  .pill-cursor, .pill-dot { display: none; }
+}
+
+/* ============================================================
+   Orbit — the 3D scene behind the sign-in glass
+   ------------------------------------------------------------
+   Everything in here animates `transform` and nothing else. Each shape is
+   rasterised once at mount and then only moved by the compositor, so the whole
+   scene costs the same whether it holds three shapes or twelve. No filters, no
+   width/height/top/left keyframes — those are what made the old backdrop drop
+   frames.
+   ============================================================ */
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* The scene is decoration; its contents can never influence page layout. */
+  contain: strict;
+  pointer-events: none;
+}
+
+/* A liquid blob. Lopsided radii make it organic without an SVG path, and it
+   only ever rotates — a morphing border-radius would re-run layout. */
+.blob {
+  position: absolute;
+  border-radius: 42% 58% 63% 37% / 47% 38% 62% 53%;
+  transform-origin: 50% 50%;
+  animation: blobSpin var(--dur, 44s) linear infinite;
+  animation-delay: calc(var(--i, 0) * -6s);
+  will-change: transform;
+}
+.blob-b { border-radius: 63% 37% 41% 59% / 36% 57% 43% 64%; animation-direction: reverse; }
+
+@keyframes blobSpin {
+  0%   { transform: rotate(0deg)   scale(1); }
+  50%  { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* A sphere seen *through* the pane. Its edge fades to nothing instead of
+   ending on a rim, which is what a real sphere looks like behind frosted
+   glass — so the frost can be painted rather than computed. This is the whole
+   reason the pane needs no backdrop-filter: nothing behind it has a hard edge
+   to blur in the first place. */
+.orb-soft {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%,
+    var(--orb-a, #2fd0b6) 0%,
+    var(--orb-b, #1f3763) 42%,
+    rgba(16, 32, 70, .55) 68%,
+    rgba(16, 32, 70, 0) 100%);
+  animation: orbit var(--dur, 18s) var(--ease) infinite;
+  animation-delay: calc(var(--i, 0) * -2.6s);
+  will-change: transform;
+}
+
+/* A sphere in front of the pane, where you see it crisply. The off-centre
+   highlight is what sells the third dimension — a flat radial gradient reads
+   as a disc, an offset one reads as lit. */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .92), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at 68% 74%, var(--orb-b, #1f3763), var(--orb-a, #159c8a) 82%);
+  box-shadow:
+    inset -6px -8px 18px rgba(0, 0, 0, .38),
+    0 18px 40px -12px rgba(0, 0, 0, .55);
+  animation: orbit var(--dur, 18s) var(--ease) infinite;
+  animation-delay: calc(var(--i, 0) * -2.6s);
+  will-change: transform;
+}
+/* Spheres in front of the glass catch the light differently and sit closer,
+   so they drift further and faster than the ones behind it. */
+.orb-front { z-index: 3; }
+
+@keyframes orbit {
+  0%   { transform: translate3d(0, 0, 0)          rotate(0deg); }
+  25%  { transform: translate3d(14px, -26px, 0)   rotate(4deg); }
+  50%  { transform: translate3d(-8px, -40px, 0)   rotate(-3deg); }
+  75%  { transform: translate3d(-20px, -18px, 0)  rotate(2deg); }
+  100% { transform: translate3d(0, 0, 0)          rotate(0deg); }
+}
+
+/* The pane the form sits on.
+   No backdrop-filter. Measured: with one on this pane the sweep sat at a 50ms
+   median and spiked to 83ms, and it made no difference whether anything behind
+   it was moving — a live blur over a full-size element is simply re-computed
+   every frame. Without it the same page holds a locked 16.7ms.
+   The frost is painted instead: a milky gradient, a lit bevel, and a fine
+   diagonal grain, over a backdrop (.orb-soft, .blob) that carries no hard edge
+   for a blur to have softened anyway. */
+.glass {
+  position: relative;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(58deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 5px),
+    linear-gradient(150deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .10) 58%, rgba(255, 255, 255, .17));
+  border: 1px solid rgba(255, 255, 255, .35);
+  box-shadow:
+    0 40px 90px -30px rgba(2, 8, 23, .75),
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 -1px 0 rgba(255, 255, 255, .12);
+}
+/* A brighter seam along the top-left edge, the way a real bevel catches light. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .7), transparent 40%, transparent 60%, rgba(255, 255, 255, .25));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Fields on glass: dark UI on a light-on-dark pane, not the paper inputs. */
+.input-glass {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .26);
+  color: #fff;
+  /* Room for the leading icon is baked in rather than left to a `pl-10`
+     utility: these rules are unlayered, so they would beat Tailwind's
+     @layer utilities and the icon would sit on top of the text. */
+  padding: .72rem .9rem .72rem 2.5rem;
+  font-size: .95rem;
+  transition: background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+/* Same reason as the left padding: the reveal button needs its own gutter. */
+.input-glass-pw { padding-right: 2.75rem; }
+.input-glass::placeholder { color: rgba(255, 255, 255, .42); }
+.input-glass:focus {
+  outline: none;
+  background: rgba(255, 255, 255, .18);
+  border-color: rgba(63, 184, 166, .8);
+  box-shadow: 0 0 0 3px rgba(63, 184, 166, .22);
+}
+.input-glass[aria-invalid='true'] {
+  border-color: rgba(240, 138, 132, .85);
+  box-shadow: 0 0 0 3px rgba(240, 138, 132, .2);
+}
+.label-glass {
+  display: block;
+  margin-bottom: .4rem;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: rgba(255, 255, 255, .72);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob, .orb, .orb-soft { animation: none !important; }
+  .float, .float-slow, .aurora, .glint::after, .shake { animation: none !important; }
+  .deal, .reveal-in, .genie, .genie-closing { animation: none !important; }
+  .reveal { opacity: 1; transform: none; }
+  .pill-cursor, .pill-dot { display: none; }
+  .seg-thumb, .nav-rail { transition: none; }
+  .plate, .btn svg, .icon-pop { transition: none; }
+  .panel:hover .plate, .plate:hover { transform: none; }
+}
+
+/* ============================================================
+   Print — receipts and report cards
+   ============================================================ */
+@media print {
+  body { background: #fff !important; background-image: none !important; }
+  .no-print { display: none !important; }
+  .print-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: none !important;
+    background: #fff !important;
+  }
+  @page { margin: 14mm; }
 }

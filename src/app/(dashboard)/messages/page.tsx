@@ -1,154 +1,259 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { MessageSquare, Send, User } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import { MessageSquare, Send, Inbox as InboxIcon, MailOpen } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import { formatDate, toPayload, validate, dbErrorMessage, required, maxLen, getRoleLabel } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import { PageHeader, Modal, EmptyState } from '@/components/ui'
+
+const EMPTY_FORM = { to_id: '', subject: '', body: '' }
+
+const RULES = {
+  to_id:   [required('Recipient')],
+  subject: [required('Subject'), maxLen(140, 'Subject')],
+  body:    [required('Message')],
+}
 
 export default function MessagesPage() {
+  const { profile } = useAuth()
+  const supabase = useMemo(() => createClient(), [])
+
   const [messages, setMessages] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [box, setBox] = useState<'inbox' | 'sent'>('inbox')
+  const [selected, setSelected] = useState<any>(null)
+
   const [showCompose, setShowCompose] = useState(false)
-  const [selectedMsg, setSelectedMsg] = useState<any>(null)
-  const supabase = createClientComponentClient()
+  const [form, setForm] = useState<Record<string, any>>(EMPTY_FORM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [sending, setSending] = useState(false)
 
-  const emptyForm = { to_id: '', subject: '', body: '' }
-  const [form, setForm] = useState(emptyForm)
-
-  useEffect(() => { fetchMessages() }, [])
-
-  async function fetchMessages() {
+  const fetchMessages = useCallback(async () => {
+    if (!profile) return
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data } = await supabase.from('messages')
-      .select('*, sender:profiles!messages_from_id_fkey(full_name), receiver:profiles!messages_to_id_fkey(full_name)')
-      .or(`from_id.eq.${user?.id},to_id.eq.${user?.id}`)
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, subject, body, read, created_at, from_id, to_id, sender:profiles!messages_from_id_fkey(full_name), receiver:profiles!messages_to_id_fkey(full_name)')
+      .or(`from_id.eq.${profile.id},to_id.eq.${profile.id}`)
       .order('created_at', { ascending: false })
-    setMessages((data ?? []).map((m: any) => ({ ...m, from_name: m.sender?.full_name, to_name: m.receiver?.full_name })))
-    supabase.from('profiles').select('id, full_name, role').then(({ data: u }) => setUsers(u ?? []))
+    if (error) toast.error(dbErrorMessage(error))
+    setMessages(data ?? [])
     setLoading(false)
+  }, [supabase, profile])
+
+  useEffect(() => { fetchMessages() }, [fetchMessages])
+
+  useEffect(() => {
+    supabase.from('profiles').select('id, full_name, role').order('full_name')
+      .then(({ data }) => setUsers(data ?? []))
+  }, [supabase])
+
+  const set = (k: string, v: any) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
   }
 
   async function sendMessage() {
-    const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('messages').insert({ ...form, from_id: user?.id, read: false })
-    if (error) { toast.error('Send failed'); return }
-    toast.success('Message sent'); setShowCompose(false); setForm(emptyForm); fetchMessages()
+    const errs = validate(form, RULES)
+    if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the highlighted fields'); return }
+
+    setSending(true)
+    const { error } = await supabase.from('messages').insert({
+      ...toPayload(form, EMPTY_FORM),
+      from_id: profile?.id,
+      read: false,
+    })
+    setSending(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Message sent')
+    setShowCompose(false)
+    setForm(EMPTY_FORM)
+    fetchMessages()
   }
 
-  async function markRead(id: string) {
-    await supabase.from('messages').update({ read: true }).eq('id', id)
+  async function open(m: any) {
+    setSelected(m)
+    // Only the recipient may flip the read flag; RLS enforces it too.
+    if (!m.read && m.to_id === profile?.id) {
+      await supabase.from('messages').update({ read: true }).eq('id', m.id)
+      setMessages(prev => prev.map(x => (x.id === m.id ? { ...x, read: true } : x)))
+    }
   }
+
+  const shown = messages.filter(m => (box === 'inbox' ? m.to_id === profile?.id : m.from_id === profile?.id))
+  const unread = messages.filter(m => m.to_id === profile?.id && !m.read).length
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-          <p className="text-sm text-gray-500">Teacher-parent communication</p>
-        </div>
-        <button onClick={() => setShowCompose(true)} className="btn-primary flex items-center gap-2">
-          <Send className="w-4 h-4" /> Compose
-        </button>
-      </div>
+      <PageHeader
+        icon={MessageSquare}
+        title="Messages"
+        subtitle="Direct communication between staff and parents"
+        actions={
+          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowCompose(true) }} className="btn btn-accent">
+            <Send className="h-4 w-4" /> Compose
+          </button>
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-        {/* Inbox List */}
-        <div className="card overflow-y-auto">
-          <div className="p-4 border-b">
-            <h3 className="font-semibold text-gray-800">Inbox</h3>
-          </div>
-          <div className="divide-y">
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="p-4"><div className="h-4 bg-gray-100 rounded animate-pulse" /></div>
-              ))
-            ) : messages.length === 0 ? (
-              <div className="p-8 text-center">
-                <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-400 text-sm">No messages</p>
-              </div>
-            ) : messages.map(m => (
-              <div key={m.id}
-                onClick={() => { setSelectedMsg(m); markRead(m.id) }}
-                className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-                  selectedMsg?.id === m.id ? 'bg-blue-50 border-l-4 border-l-[#1e3a5f]' : ''
-                } ${!m.read ? 'bg-blue-50/40' : ''}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${!m.read ? 'font-bold text-gray-900' : 'font-medium text-gray-700'}`}>{m.subject}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">From: {m.from_name}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs text-gray-400">{formatDate(m.created_at, 'dd MMM')}</p>
-                    {!m.read && <div className="w-2 h-2 bg-[#1e3a5f] rounded-full ml-auto mt-1" />}
-                  </div>
-                </div>
-              </div>
+      <div className="grid h-[calc(100vh-260px)] min-h-[420px] grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* ── List ────────────────────────────────────── */}
+        <div className="panel flex flex-col overflow-hidden">
+          <div
+            className="flex shrink-0 gap-1 p-2"
+            style={{ borderBottom: '1px solid var(--edge)', background: 'var(--surface-sunk)' }}
+          >
+            {(['inbox', 'sent'] as const).map(b => (
+              <button
+                key={b}
+                onClick={() => { setBox(b); setSelected(null) }}
+                aria-pressed={box === b}
+                className={`btn btn-sm flex-1 capitalize ${box === b ? 'btn-primary' : 'btn-ghost'}`}
+              >
+                {b === 'inbox' ? <InboxIcon className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+                {b}
+                {b === 'inbox' && unread > 0 && (
+                  <span className="badge ml-1" style={{ background: 'var(--accent)', color: '#fff' }}>{unread}</span>
+                )}
+              </button>
             ))}
           </div>
+
+          <div className="scrollbar-thin flex-1 overflow-y-auto">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="p-4"><div className="skeleton h-4" /></div>
+              ))
+            ) : shown.length === 0 ? (
+              <EmptyState icon={MailOpen} title={`No ${box} messages`} hint="Conversations appear here." />
+            ) : shown.map(m => {
+              const isNew = box === 'inbox' && !m.read
+              const active = selected?.id === m.id
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => open(m)}
+                  className="block w-full px-4 py-3.5 text-left transition-colors"
+                  style={{
+                    borderTop: '1px solid var(--edge)',
+                    borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
+                    background: active ? 'var(--paper-deep)' : isNew ? 'rgba(184,135,59,.06)' : 'transparent',
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className="truncate text-sm"
+                        style={{ color: 'var(--ink)', fontWeight: isNew ? 700 : 500 }}
+                      >
+                        {m.subject}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--ink-faint)' }}>
+                        {box === 'inbox' ? m.sender?.full_name ?? 'Unknown' : m.receiver?.full_name ?? 'Unknown'}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{formatDate(m.created_at, 'dd MMM')}</p>
+                      {isNew && <span className="ml-auto mt-1 block h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} />}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
-        {/* Message View */}
-        <div className="card lg:col-span-2 flex flex-col">
-          {selectedMsg ? (
+        {/* ── Reader ──────────────────────────────────── */}
+        <div className="panel flex flex-col overflow-hidden lg:col-span-2">
+          {selected ? (
             <>
-              <div className="p-5 border-b">
-                <h3 className="font-bold text-gray-900 text-lg">{selectedMsg.subject}</h3>
-                <div className="flex gap-4 mt-1 text-sm text-gray-500">
-                  <span>From: <strong>{selectedMsg.from_name}</strong></span>
-                  <span>To: <strong>{selectedMsg.to_name}</strong></span>
-                  <span>{formatDate(selectedMsg.created_at)}</span>
+              <div className="shrink-0 px-6 py-5" style={{ borderBottom: '1px solid var(--edge)' }}>
+                <h3 className="text-lg font-bold" style={{ color: 'var(--ink)' }}>{selected.subject}</h3>
+                <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: 'var(--ink-faint)' }}>
+                  <span>From <strong style={{ color: 'var(--ink-soft)' }}>{selected.sender?.full_name ?? '—'}</strong></span>
+                  <span>To <strong style={{ color: 'var(--ink-soft)' }}>{selected.receiver?.full_name ?? '—'}</strong></span>
+                  <span>{formatDate(selected.created_at, 'dd MMM yyyy, HH:mm')}</span>
                 </div>
               </div>
-              <div className="p-5 flex-1">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{selectedMsg.body}</p>
+              <div className="scrollbar-thin flex-1 overflow-y-auto px-6 py-5">
+                <p className="whitespace-pre-wrap leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{selected.body}</p>
+              </div>
+              <div className="shrink-0 px-6 py-4" style={{ borderTop: '1px solid var(--edge)', background: 'var(--surface-sunk)' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setForm({
+                      to_id: selected.from_id === profile?.id ? selected.to_id : selected.from_id,
+                      subject: selected.subject.startsWith('Re: ') ? selected.subject : `Re: ${selected.subject}`,
+                      body: '',
+                    })
+                    setErrors({})
+                    setShowCompose(true)
+                  }}
+                >
+                  <Send className="h-3.5 w-3.5" /> Reply
+                </button>
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-400">Select a message to read</p>
-              </div>
+            <div className="flex flex-1 items-center justify-center">
+              <EmptyState icon={MessageSquare} title="Nothing selected" hint="Pick a message from the list to read it." />
             </div>
           )}
         </div>
       </div>
 
-      {showCompose && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-xl">
-            <div className="p-6 border-b"><h3 className="font-bold text-lg">New Message</h3></div>
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
-                <select value={form.to_id} onChange={e => setForm(p => ({ ...p, to_id: e.target.value }))} className="input">
-                  <option value="">Select recipient</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.full_name} ({u.role})</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-                <input value={form.subject} onChange={e => setForm(p => ({ ...p, subject: e.target.value }))} className="input" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Message</label>
-                <textarea value={form.body} onChange={e => setForm(p => ({ ...p, body: e.target.value }))}
-                  className="input h-32 resize-none" />
-              </div>
-            </div>
-            <div className="p-6 pt-0 flex justify-end gap-3">
-              <button onClick={() => setShowCompose(false)} className="btn-secondary">Cancel</button>
-              <button onClick={sendMessage} className="btn-primary flex items-center gap-2">
-                <Send className="w-4 h-4" /> Send
-              </button>
-            </div>
+      <Modal
+        open={showCompose}
+        onClose={() => setShowCompose(false)}
+        title="New message"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowCompose(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={sendMessage} disabled={sending}>
+              <Send className="h-4 w-4" /> {sending ? 'Sending…' : 'Send'}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="to_id" className="label">To</label>
+            <select
+              id="to_id" value={form.to_id} onChange={e => set('to_id', e.target.value)}
+              className={`input ${errors.to_id ? 'input-error' : ''}`}
+            >
+              <option value="">Select recipient</option>
+              {users.filter(u => u.id !== profile?.id).map(u => (
+                <option key={u.id} value={u.id}>{u.full_name} — {getRoleLabel(u.role)}</option>
+              ))}
+            </select>
+            {errors.to_id && <p className="field-error">{errors.to_id}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="subject" className="label">Subject</label>
+            <input
+              id="subject" value={form.subject} onChange={e => set('subject', e.target.value)}
+              className={`input ${errors.subject ? 'input-error' : ''}`}
+            />
+            {errors.subject && <p className="field-error">{errors.subject}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="body" className="label">Message</label>
+            <textarea
+              id="body" rows={6} value={form.body} onChange={e => set('body', e.target.value)}
+              className={`input resize-none ${errors.body ? 'input-error' : ''}`}
+            />
+            {errors.body && <p className="field-error">{errors.body}</p>}
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   )
 }

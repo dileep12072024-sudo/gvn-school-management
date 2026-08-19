@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   class_id         UUID REFERENCES public.classes(id) ON DELETE SET NULL,
   section_id       UUID REFERENCES public.sections(id) ON DELETE SET NULL,
   parent_id        UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  profile_id       UUID REFERENCES public.profiles(id) ON DELETE SET NULL, -- the student's own login
   address          TEXT NOT NULL,
   phone            TEXT,
   photo_url        TEXT,
@@ -318,18 +319,31 @@ CREATE POLICY "sections_write" ON public.sections FOR ALL USING (get_my_role() I
 CREATE POLICY "teachers_select" ON public.teachers FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "teachers_write" ON public.teachers FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal'));
 
--- STUDENTS: all auth read; admins & teachers write
-CREATE POLICY "students_select" ON public.students FOR SELECT USING (auth.role() = 'authenticated');
+-- Helper: staff see everything; a parent/student sees only their own child/self.
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT public.get_my_role() IN ('organiser','principal','vice_principal','teacher');
+$$;
+
+CREATE OR REPLACE FUNCTION public.owns_student(sid UUID)
+RETURNS BOOLEAN LANGUAGE sql SECURITY DEFINER STABLE AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.students s
+    WHERE s.id = sid AND (s.parent_id = auth.uid() OR s.profile_id = auth.uid())
+  );
+$$;
+
+-- STUDENTS: staff read all, families read their own; admins & teachers write
+CREATE POLICY "students_select" ON public.students FOR SELECT USING (is_staff() OR owns_student(id));
 CREATE POLICY "students_write" ON public.students FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal','teacher'));
 
--- ATTENDANCE: teachers & admins write; all read
-CREATE POLICY "attendance_select" ON public.attendance FOR SELECT USING (auth.role() = 'authenticated');
+-- ATTENDANCE: teachers & admins write; staff read all, families read their own
+CREATE POLICY "attendance_select" ON public.attendance FOR SELECT USING (is_staff() OR owns_student(student_id));
 CREATE POLICY "attendance_write" ON public.attendance FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal','teacher'));
 
 -- FEES: admins read/write; parents read own
 CREATE POLICY "fees_select" ON public.fees FOR SELECT USING (
-  get_my_role() IN ('organiser','principal','vice_principal') OR
-  EXISTS (SELECT 1 FROM public.students s WHERE s.id = fees.student_id AND s.parent_id = auth.uid())
+  get_my_role() IN ('organiser','principal','vice_principal') OR owns_student(fees.student_id)
 );
 CREATE POLICY "fees_write" ON public.fees FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal'));
 
@@ -337,7 +351,7 @@ CREATE POLICY "fees_write" ON public.fees FOR ALL USING (get_my_role() IN ('orga
 CREATE POLICY "exams_select" ON public.exams FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "exams_write" ON public.exams FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal','teacher'));
 
-CREATE POLICY "results_select" ON public.exam_results FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "results_select" ON public.exam_results FOR SELECT USING (is_staff() OR owns_student(student_id));
 CREATE POLICY "results_write" ON public.exam_results FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal','teacher'));
 
 -- TIMETABLE: all read; admins write
@@ -353,7 +367,7 @@ CREATE POLICY "transport_routes_select" ON public.transport_routes FOR SELECT US
 CREATE POLICY "transport_routes_write" ON public.transport_routes FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal'));
 CREATE POLICY "transport_vehicles_select" ON public.transport_vehicles FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY "transport_vehicles_write" ON public.transport_vehicles FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal'));
-CREATE POLICY "transport_alloc_select" ON public.transport_allocations FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "transport_alloc_select" ON public.transport_allocations FOR SELECT USING (is_staff() OR owns_student(student_id));
 CREATE POLICY "transport_alloc_write" ON public.transport_allocations FOR ALL USING (get_my_role() IN ('organiser','principal','vice_principal'));
 
 -- CALENDAR: all read; admins write
@@ -396,6 +410,8 @@ CREATE POLICY "school_docs_insert" ON storage.objects FOR INSERT WITH CHECK (
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_students_class ON public.students(class_id);
 CREATE INDEX IF NOT EXISTS idx_students_status ON public.students(status);
+CREATE INDEX IF NOT EXISTS idx_students_parent ON public.students(parent_id);
+CREATE INDEX IF NOT EXISTS idx_students_profile ON public.students(profile_id);
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON public.attendance(date);
 CREATE INDEX IF NOT EXISTS idx_attendance_student ON public.attendance(student_id);
 CREATE INDEX IF NOT EXISTS idx_fees_student ON public.fees(student_id);

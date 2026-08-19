@@ -1,226 +1,364 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { GraduationCap, Eye, EyeOff, Lock, Mail, Users, ClipboardCheck, BookOpen, Calendar } from 'lucide-react'
+import { GraduationCap, Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, CalendarCheck, IndianRupee, Bus } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import { validate, required, email as emailRule } from '@/lib/utils'
+import { haptic } from '@/lib/haptics'
 
-const DEMO_ACCOUNTS = [
-  { role: 'Organiser',      email: 'organiser@gvn.edu.in',  password: 'GVN@2024!' },
-  { role: 'Principal',      email: 'principal@gvn.edu.in',  password: 'GVN@2024!' },
-  { role: 'Vice Principal', email: 'vp@gvn.edu.in',         password: 'GVN@2024!' },
-  { role: 'Teacher',        email: 'teacher@gvn.edu.in',    password: 'GVN@2024!' },
-  { role: 'Parent',         email: 'parent@gvn.edu.in',     password: 'GVN@2024!' },
+const PILLARS = [
+  { icon: CalendarCheck, label: 'Attendance & academics', desc: 'Registers, results, report cards' },
+  { icon: IndianRupee,   label: 'Fees & receipts',        desc: 'Collections, dues, printable receipts' },
+  { icon: Bus,           label: 'Timetable & transport',  desc: 'Period grids, routes, vehicles' },
 ]
 
-const FEATURES = [
-  { icon: Users,         label: 'Students & Attendance', desc: 'Track daily attendance & academic progress' },
-  { icon: ClipboardCheck,label: 'Fees & Exams',          desc: 'Manage payments & exam results' },
-  { icon: BookOpen,      label: 'Timetable & Transport', desc: 'Schedule classes & manage routes' },
-  { icon: Calendar,      label: 'Notices & Events',      desc: 'Stay updated with school news' },
+/**
+ * The scene: two slow liquid blobs and a scatter of lit spheres, some behind
+ * the glass and some in front of it so the pane reads as a physical sheet
+ * suspended in the middle of the frame rather than a panel painted on top.
+ *
+ * Every value here is static. The motion is entirely in CSS transforms, so
+ * React renders this once and never touches it again.
+ */
+const BLOBS = [
+  { w: 46, h: 44, top: -8,  left: -12, dur: 52, i: 0, bg: 'radial-gradient(circle at 34% 32%, #2ad2b8, #0e6f8f 55%, #16255a 100%)', op: .72 },
+  { w: 40, h: 42, top: 44,  left: 62,  dur: 66, i: 1, bg: 'radial-gradient(circle at 62% 58%, #4d7dd6, #2b3f8f 48%, #101b3d 100%)', op: .78 },
 ]
 
-export default function LoginPage() {
-  const [email, setEmail]             = useState('')
-  const [password, setPassword]       = useState('')
+const ORBS = [
+  // Behind the glass. Bigger than the front ones: a soft falloff needs room to
+  // read as a diffuse ball rather than as a smudge.
+  { d: 168, top: 10, left: 14, dur: 17, i: 0, a: '#2fd0b6', b: '#12466b', front: false },
+  { d: 112, top: 64, left: 6,  dur: 21, i: 1, a: '#4f86e8', b: '#1a2a63', front: false },
+  { d: 210, top: 52, left: 74, dur: 25, i: 2, a: '#3aa8d8', b: '#16255a', front: false },
+  { d: 96,  top: 18, left: 84, dur: 19, i: 3, a: '#2fd0b6', b: '#0e5a52', front: false },
+  // In front — these pass over the pane. Placed to clip its *edges* only: a
+  // sphere sitting on the form is a sphere sitting on something you have to
+  // read.
+  { d: 74,  top: 3,   left: 40,   dur: 23, i: 4, a: '#5ce0c8', b: '#12466b', front: true },
+  { d: 52,  top: 93,  left: 12.5, dur: 20, i: 5, a: '#5f97f0', b: '#1a2a63', front: true },
+  { d: 34,  top: 44,  left: 3,    dur: 15, i: 6, a: '#2fd0b6', b: '#0e5a52', front: true },
+]
+
+/**
+ * The scene is drawn in two passes because `contain` makes each layer its own
+ * stacking context — a z-index inside one can never lift a sphere above the
+ * pane. The front pass is a separate sibling that sits over the glass, which
+ * is what makes the pane look suspended between the spheres rather than
+ * pasted on top of them.
+ */
+function Scene({ front = false }: { front?: boolean }) {
+  return (
+    <div className="scene" style={front ? { zIndex: 4 } : undefined} aria-hidden>
+      {!front && BLOBS.map((b, n) => (
+        <div
+          key={n}
+          className={`blob${n ? ' blob-b' : ''}`}
+          style={{
+            width: `${b.w}vw`, height: `${b.h}vw`,
+            top: `${b.top}%`, left: `${b.left}%`,
+            background: b.bg, opacity: b.op,
+            '--dur': `${b.dur}s`, '--i': b.i,
+          } as React.CSSProperties}
+        />
+      ))}
+      {ORBS.filter(o => o.front === front).map((o, n) => (
+        <div
+          key={n}
+          // Behind the pane a sphere reads as frost-softened, in front of it as
+          // a solid lit ball. Two different paints, no filter involved.
+          className={front ? 'orb' : 'orb-soft'}
+          style={{
+            width: o.d, height: o.d,
+            top: `${o.top}%`, left: `${o.left}%`,
+            '--dur': `${o.dur}s`, '--i': o.i,
+            '--orb-a': o.a, '--orb-b': o.b,
+          } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** Counts 0 → value once, on mount. Pure decoration for the crest figure. */
+function useCountUp(target: number, ms = 1100) {
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(target); return }
+    let raf = 0
+    const t0 = performance.now()
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / ms)
+      // easeOutCubic — fast start, gentle settle, no overshoot on a number.
+      setN(Math.round(target * (1 - Math.pow(1 - p, 3))))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [target, ms])
+  return n
+}
+
+function LoginForm() {
+  const [form, setForm] = useState({ email: '', password: '' })
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading]         = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [shake, setShake] = useState(false)
+
   const router = useRouter()
+  const supabase = useMemo(() => createClient(), [])
+
+  const years = useCountUp(30)
+
+  const set = (k: string, v: string) => {
+    setForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
+  }
+
+  const fail = (msg: string) => {
+    haptic('error')
+    setShake(true)
+    setTimeout(() => setShake(false), 500)
+    toast.error(msg)
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const errs = validate(form, {
+      email:    [required('Email'), emailRule],
+      password: [required('Password')],
+    })
+    if (Object.keys(errs).length) { setErrors(errs); fail('Check the highlighted fields'); return }
+
     setLoading(true)
-    try {
-      const res  = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        toast.error(data.error || 'Invalid credentials')
-      } else {
-        toast.success('Welcome back!')
-        router.push('/dashboard')
-        router.refresh()
-      }
-    } catch {
-      toast.error('Network error. Please try again.')
-    } finally {
-      setLoading(false)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: form.email.trim(),
+      password: form.password,
+    })
+    setLoading(false)
+
+    if (error) {
+      // Don't leak which half was wrong.
+      fail(error.message === 'Email not confirmed'
+        ? 'Please confirm your email address first'
+        : 'Incorrect email or password')
+      return
     }
+
+    haptic('success')
+    toast.success('Welcome back')
+    // Read ?next straight off the URL rather than through useSearchParams.
+    // That hook forces the whole subtree out of prerendering, so the server
+    // was shipping the Suspense fallback — an empty shell — and the form did
+    // not exist until ~750KB of JS had downloaded and hydrated. Reading it
+    // here costs nothing and lets the page render as static HTML.
+    // A leading slash only, so ?next=//evil.com cannot bounce the user off-site.
+    const next = new URLSearchParams(window.location.search).get('next')
+    const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
+    // '/' resolves the right home server-side via landingFor(), so a parent
+    // lands on their child's page rather than on a staff dashboard.
+    router.replace(dest)
+    router.refresh()
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4 bg-animated-gradient">
+    <div
+      className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden p-4"
+      style={{ background: 'linear-gradient(150deg, #071129 0%, #10275a 42%, #0a1a3f 72%, #061024 100%)' }}
+    >
+      <Scene />
 
-      {/* Subtle grid overlay */}
-      <div className="absolute inset-0 bg-grid-pattern" />
-
-      {/* Floating ambient orbs */}
-      <div className="absolute top-12 left-12 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl animate-float pointer-events-none" />
-      <div className="absolute bottom-12 right-12 w-96 h-96 bg-gold-500/15 rounded-full blur-3xl animate-float-delayed pointer-events-none" />
-      <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl animate-float-slow pointer-events-none" />
+      {/* Vignette, so the eye lands on the pane and not on a stray sphere. */}
       <div
-        className="absolute bottom-1/3 left-1/5 w-52 h-52 bg-purple-500/10 rounded-full blur-3xl animate-float pointer-events-none"
-        style={{ animationDelay: '3s' }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse at 50% 48%, transparent 30%, rgba(3, 8, 20, .72) 100%)' }}
       />
 
-      {/* Floating geometric accents */}
-      <div className="absolute top-24 right-1/4 w-8 h-8 border-2 border-white/10 rounded-lg rotate-45 animate-float-slow pointer-events-none" />
       <div
-        className="absolute bottom-28 left-1/3 w-5 h-5 border-2 border-gold-400/20 rounded-full animate-float pointer-events-none"
-        style={{ animationDelay: '1.5s' }}
-      />
-      <div className="absolute top-1/3 right-24 w-3 h-3 bg-white/8 rounded animate-float-delayed pointer-events-none" />
+        className={`glass deal grid w-full max-w-5xl grid-cols-1 rounded-[26px] lg:grid-cols-[1.02fr_1fr] ${shake ? 'shake' : ''}`}
+      >
+        {/* ── Left: the school ──────────────────────────── */}
+        <div className="relative hidden flex-col justify-between p-10 text-white lg:flex">
+          {/* The seam between the two halves, lit like the pane's edge. */}
+          <div
+            className="pointer-events-none absolute inset-y-8 right-0 w-px"
+            style={{ background: 'linear-gradient(180deg, transparent, rgba(255,255,255,.28), transparent)' }}
+          />
 
-      {/* Card container */}
-      <div className="relative w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-0 rounded-3xl overflow-hidden shadow-2xl animate-slide-up">
-
-        {/* ── Left Panel: glassmorphism dark ───────────────── */}
-        <div className="hidden lg:flex flex-col justify-between glass-dark p-10 text-white relative overflow-hidden">
-          {/* Inner ambient glows */}
-          <div className="absolute -top-8 -right-8 w-64 h-64 bg-gold-500/12 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-8 -left-8 w-52 h-52 bg-blue-500/12 rounded-full blur-3xl pointer-events-none" />
-
-          {/* Logo */}
-          <div className="flex items-center gap-4 relative z-10">
+          <div className="deal flex items-center gap-3.5" style={{ '--i': 1 } as React.CSSProperties}>
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl animate-pulse-glow shrink-0"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+              className="plate float grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)]"
+              style={{
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 55%, var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), 0 8px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.4)',
+              }}
             >
-              <GraduationCap className="w-8 h-8 text-white" />
+              <GraduationCap className="h-7 w-7 text-white" />
             </div>
             <div>
-              <p className="font-bold text-xl leading-tight text-gradient-gold">Geethanjali</p>
-              <p className="text-blue-300/80 text-sm tracking-wide">Vidya Nilayam</p>
+              <p className="text-lg font-bold leading-tight">Geethanjali Vidya Nilayam</p>
+              <p className="text-sm tracking-wide text-white/55">Peddawaltair · Visakhapatnam</p>
             </div>
           </div>
 
-          {/* Hero text */}
-          <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-blue-200 mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="py-10">
+            <p
+              className="deal mb-4 inline-block rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em]"
+              style={{
+                '--i': 2,
+                background: 'rgba(63,184,166,.16)',
+                color: 'var(--accent-lift)',
+                border: '1px solid rgba(63,184,166,.34)',
+              } as React.CSSProperties}
+            >
               Academic Year 2024–25
-            </div>
-            <h2 className="text-4xl font-bold leading-tight mb-4">
-              School<br />
-              <span className="text-gradient-gold">Management</span><br />
-              System
-            </h2>
-            <p className="text-blue-300/80 text-sm leading-relaxed">
-              Peddawaltair, Visakhapatnam<br />
-              Andhra Pradesh · Empowering education<br />
-              through smart administration.
+            </p>
+            <h1 className="text-[2.6rem] font-bold leading-[1.08] tracking-tight">
+              <span className="deal block" style={{ '--i': 3 } as React.CSSProperties}>School</span>
+              <span className="deal block" style={{ '--i': 4 } as React.CSSProperties}>Management</span>
+              <span
+                className="glint deal inline-block"
+                style={{
+                  '--i': 5,
+                  // Stays in the bright half of the ramp — running down into
+                  // --accent left the word nearly unreadable on this ground.
+                  background: 'linear-gradient(180deg, #eafffb, #7ff0dc 45%, #35c9b1)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                } as React.CSSProperties}
+              >
+                System
+              </span>
+            </h1>
+            <div className="mt-4 h-px w-24" style={{ background: 'linear-gradient(90deg, var(--accent-lift), transparent)' }} />
+            <p className="mt-5 text-sm text-white/55">
+              Serving Visakhapatnam for{' '}
+              <span className="font-bold tabular-nums text-white/90">{years}</span> years
             </p>
           </div>
 
-          {/* Feature list */}
-          <div className="space-y-2.5 relative z-10">
-            {FEATURES.map(f => (
-              <div key={f.label} className="flex items-center gap-3 glass rounded-xl px-3 py-2.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'rgba(245,158,11,0.2)' }}>
-                  <f.icon className="w-4 h-4 text-gold-400" />
-                </div>
+          <div className="space-y-2">
+            {PILLARS.map((p, i) => (
+              <div
+                key={p.label}
+                className="deal flex items-center gap-3 rounded-[var(--radius-sm)] px-4 py-3"
+                style={{
+                  '--i': 6 + i,
+                  background: 'rgba(255,255,255,.07)',
+                  border: '1px solid rgba(255,255,255,.12)',
+                } as React.CSSProperties}
+              >
+                <p.icon className="icon-pop h-4 w-4 shrink-0" style={{ color: 'var(--accent-lift)' }} />
                 <div>
-                  <p className="text-sm font-medium text-white leading-tight">{f.label}</p>
-                  <p className="text-xs text-blue-300/70">{f.desc}</p>
+                  <p className="text-sm font-semibold">{p.label}</p>
+                  <p className="text-xs text-white/50">{p.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── Right Panel: frosted white form ──────────────── */}
-        <div className="glass-white p-8 md:p-10 flex flex-col justify-center">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-3 mb-6 lg:hidden">
+        {/* ── Right: the form ───────────────────────────── */}
+        <div className="flex flex-col justify-center p-8 text-white md:p-10">
+          <div className="deal mb-7 flex items-center gap-3 lg:hidden" style={{ '--i': 1 } as React.CSSProperties}>
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center shadow"
-              style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+              className="plate float grid h-11 w-11 place-items-center rounded-[var(--radius-sm)]"
+              style={{
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), 0 6px 14px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.4)',
+              }}
             >
-              <GraduationCap className="w-6 h-6 text-white" />
+              <GraduationCap className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-bold text-[#1e3a5f]">GVN School</p>
-              <p className="text-gray-400 text-xs">Management System</p>
+              <p className="font-bold">Geethanjali Vidya Nilayam</p>
+              <p className="text-xs text-white/55">Peddawaltair · Visakhapatnam</p>
             </div>
           </div>
 
-          <div className="mb-7">
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back 👋</h1>
-            <p className="text-gray-500 text-sm mt-1">Sign in to your school account</p>
+          <div className="deal mb-7" style={{ '--i': 2 } as React.CSSProperties}>
+            <h2 className="text-3xl font-bold tracking-tight">Sign in</h2>
+            <div className="mt-3 h-px w-16" style={{ background: 'linear-gradient(90deg, var(--accent-lift), transparent)' }} />
+            <p className="mt-3 text-sm text-white/55">Use the account issued by the school office.</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+          <form onSubmit={handleLogin} noValidate className="space-y-4">
+            <div className="deal" style={{ '--i': 3 } as React.CSSProperties}>
+              <label htmlFor="email" className="label-glass">Email address</label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45" />
                 <input
-                  type="email" required value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="input pl-10"
+                  id="email" type="email" autoComplete="email" value={form.email}
+                  onChange={e => set('email', e.target.value)}
+                  aria-invalid={!!errors.email}
+                  className="input-glass"
                   placeholder="you@gvn.edu.in"
                 />
               </div>
+              {errors.email && <p className="mt-1.5 text-xs" style={{ color: '#f5a6a1' }}>{errors.email}</p>}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+            <div className="deal" style={{ '--i': 4 } as React.CSSProperties}>
+              <label htmlFor="password" className="label-glass">Password</label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/45" />
                 <input
-                  type={showPassword ? 'text' : 'password'} required value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  className="input pl-10 pr-11"
-                  placeholder="Enter your password"
+                  id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
+                  value={form.password} onChange={e => set('password', e.target.value)}
+                  aria-invalid={!!errors.password}
+                  className="input-glass input-glass-pw"
+                  placeholder="••••••••"
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  type="button" onClick={() => setShowPassword(s => !s)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-3 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-[var(--radius-sm)] text-white/55 transition-colors hover:bg-white/10"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {errors.password && <p className="mt-1.5 text-xs" style={{ color: '#f5a6a1' }}>{errors.password}</p>}
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full btn-gradient flex items-center justify-center gap-2 mt-1 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {loading && (
-                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-              )}
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            <div className="deal pt-2" style={{ '--i': 5 } as React.CSSProperties}>
+              <button type="submit" disabled={loading} className="btn btn-accent w-full">
+                {loading
+                  ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Signing in…</>
+                  : <>Sign in <ArrowRight className="h-4 w-4" /></>}
+              </button>
+            </div>
           </form>
 
-          {/* Demo accounts */}
-          <div className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 h-px bg-gray-200" />
-              <p className="text-xs text-gray-400 font-medium tracking-widest px-2">DEMO ACCOUNTS</p>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
-            <div className="grid grid-cols-1 gap-1.5">
-              {DEMO_ACCOUNTS.map(acc => (
-                <button
-                  key={acc.role}
-                  onClick={() => { setEmail(acc.email); setPassword(acc.password) }}
-                  className="text-left px-3 py-2 rounded-xl bg-gray-50 hover:bg-blue-50 border border-transparent hover:border-blue-200 text-xs transition-all duration-200 group"
-                >
-                  <span className="font-semibold text-[#1e3a5f] group-hover:text-blue-700">{acc.role}:</span>
-                  <span className="text-gray-500 ml-1.5">{acc.email}</span>
-                </button>
-              ))}
-            </div>
+          <div
+            className="deal mt-7 flex items-start gap-2.5 rounded-[var(--radius-sm)] px-3.5 py-3"
+            style={{
+              '--i': 6,
+              background: 'rgba(255,255,255,.07)',
+              border: '1px solid rgba(255,255,255,.12)',
+            } as React.CSSProperties}
+          >
+            <ShieldCheck className="icon-pop mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent-lift)' }} />
+            <p className="text-xs leading-relaxed text-white/55">
+              Accounts are created by the school administrator. Contact the office
+              if you cannot sign in — self-registration is disabled.
+            </p>
           </div>
         </div>
-
       </div>
+
+      {/* Spheres that pass in front of the pane. Sibling, not child, so they
+          actually sit above it — and pointer-transparent, so the form below
+          still takes every click. */}
+      <Scene front />
     </div>
   )
+}
+
+export default function LoginPage() {
+  return <LoginForm />
 }

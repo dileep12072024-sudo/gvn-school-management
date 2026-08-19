@@ -1,188 +1,408 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { Plus, BookOpen, Edit, Trash2 } from 'lucide-react'
-import { formatDate } from '@/lib/utils'
+import { useEffect, useState, useMemo, useCallback } from 'react'
+import Link from 'next/link'
+import { Plus, FileText, Trash2, ClipboardList, Save, Award, TrendingUp, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { createClient } from '@/lib/supabase'
+import {
+  formatDate, toPayload, validate, dbErrorMessage, required, positive,
+} from '@/lib/utils'
+import { gradeFor, percentage, isPass } from '@/lib/grading'
+import {
+  PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows, Toolbar,
+} from '@/components/ui'
+
+const EMPTY_EXAM = {
+  name: '',
+  class_id: '',
+  subject: '',
+  exam_date: '',
+  max_marks: '100',
+  passing_marks: '35',
+}
+
+const EXAM_RULES = {
+  name:          [required('Exam name')],
+  class_id:      [required('Class')],
+  subject:       [required('Subject')],
+  exam_date:     [required('Exam date')],
+  max_marks:     [required('Max marks'), positive('Max marks')],
+  passing_marks: [required('Passing marks')],
+}
 
 export default function ExamsPage() {
+  const supabase = useMemo(() => createClient(), [])
+
   const [exams, setExams] = useState<any[]>([])
-  const [results, setResults] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'exams' | 'results'>('exams')
-  const [showModal, setShowModal] = useState(false)
-  const [showResultModal, setShowResultModal] = useState(false)
-  const [selectedExam, setSelectedExam] = useState<any>(null)
-  const [students, setStudents] = useState<any[]>([])
-  const supabase = createClientComponentClient()
+  const [search, setSearch] = useState('')
 
-  const emptyExam = { name: '', class_id: '', subject: '', exam_date: '', max_marks: 100, passing_marks: 35 }
-  const [examForm, setExamForm] = useState(emptyExam)
-  const [resultForm, setResultForm] = useState({ student_id: '', marks_obtained: '', grade: '', remarks: '' })
+  const [showExam, setShowExam] = useState(false)
+  const [examForm, setExamForm] = useState<Record<string, any>>(EMPTY_EXAM)
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState<any | null>(null)
+
+  // Marks entry
+  const [marksExam, setMarksExam] = useState<any | null>(null)
+  const [roster, setRoster] = useState<any[]>([])
+  const [marks, setMarks] = useState<Record<string, string>>({})
+  const [savedMarks, setSavedMarks] = useState<Record<string, string>>({})
+  const [loadingRoster, setLoadingRoster] = useState(false)
 
   useEffect(() => {
-    supabase.from('classes').select('*').then(({ data }) => setClasses(data ?? []))
-    fetchExams()
-  }, [])
+    supabase.from('classes').select('id, name, grade').order('grade')
+      .then(({ data }) => setClasses(data ?? []))
+  }, [supabase])
 
-  async function fetchExams() {
+  const fetchExams = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('exams').select('*, classes(name)').order('exam_date', { ascending: false })
-    setExams((data ?? []).map((e: any) => ({ ...e, class_name: e.classes?.name })))
+    const { data, error } = await supabase
+      .from('exams')
+      .select('id, name, subject, exam_date, max_marks, passing_marks, class_id, classes(name)')
+      .order('exam_date', { ascending: false })
+    if (error) toast.error(dbErrorMessage(error))
+    setExams(data ?? [])
     setLoading(false)
+  }, [supabase])
+
+  useEffect(() => { fetchExams() }, [fetchExams])
+
+  const setExamField = (k: string, v: any) => {
+    setExamForm(p => ({ ...p, [k]: v }))
+    if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
   }
 
-  async function handleSaveExam() {
-    const { error } = await supabase.from('exams').insert(examForm)
-    if (error) { toast.error('Failed'); return }
+  async function saveExam() {
+    const errs = validate(examForm, EXAM_RULES)
+    if (Number(examForm.passing_marks) > Number(examForm.max_marks)) {
+      errs.passing_marks = 'Passing marks cannot exceed max marks'
+    }
+    if (Object.keys(errs).length) { setErrors(errs); toast.error('Please fix the highlighted fields'); return }
+
+    setSaving(true)
+    const payload = {
+      ...toPayload(examForm, EMPTY_EXAM),
+      max_marks: Number(examForm.max_marks),
+      passing_marks: Number(examForm.passing_marks),
+    }
+    const { error } = await supabase.from('exams').insert(payload)
+    setSaving(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
     toast.success('Exam scheduled')
-    setShowModal(false); setExamForm(emptyExam); fetchExams()
+    setShowExam(false)
+    setExamForm(EMPTY_EXAM)
+    fetchExams()
   }
 
-  async function openResults(exam: any) {
-    setSelectedExam(exam)
-    const { data: studs } = await supabase.from('students').select('id, full_name').eq('class_id', exam.class_id).eq('status', 'active')
-    setStudents(studs ?? [])
-    const { data: res } = await supabase.from('exam_results').select('*, students(full_name)').eq('exam_id', exam.id)
-    setResults((res ?? []).map((r: any) => ({ ...r, student_name: r.students?.full_name })))
-    setShowResultModal(true)
+  async function deleteExam() {
+    if (!deleting) return
+    const { error } = await supabase.from('exams').delete().eq('id', deleting.id)
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    toast.success('Exam deleted')
+    setDeleting(null)
+    fetchExams()
   }
 
-  async function saveResult() {
-    const { error } = await supabase.from('exam_results').upsert(
-      { ...resultForm, exam_id: selectedExam.id, marks_obtained: Number(resultForm.marks_obtained) },
-      { onConflict: 'exam_id,student_id' }
-    )
-    if (error) { toast.error('Failed'); return }
-    toast.success('Result saved')
-    openResults(selectedExam)
+  /** Load the whole class at once — marks are entered per class, not per pupil. */
+  async function openMarks(exam: any) {
+    setMarksExam(exam)
+    setLoadingRoster(true)
+
+    const [{ data: studs }, { data: res }] = await Promise.all([
+      supabase.from('students').select('id, full_name, admission_number')
+        .eq('class_id', exam.class_id).eq('status', 'active').order('full_name'),
+      supabase.from('exam_results').select('student_id, marks_obtained').eq('exam_id', exam.id),
+    ])
+
+    const map: Record<string, string> = {}
+    ;(res ?? []).forEach((r: any) => { map[r.student_id] = String(r.marks_obtained) })
+
+    setRoster(studs ?? [])
+    setMarks(map)
+    setSavedMarks(map)
+    setLoadingRoster(false)
   }
+
+  async function saveMarks() {
+    if (!marksExam) return
+    const max = Number(marksExam.max_marks)
+
+    const entered = roster.filter(s => marks[s.id] !== undefined && marks[s.id] !== '')
+    if (!entered.length) { toast.error('Enter at least one mark'); return }
+
+    const invalid = entered.find(s => {
+      const v = Number(marks[s.id])
+      return !Number.isFinite(v) || v < 0 || v > max
+    })
+    if (invalid) { toast.error(`${invalid.full_name}: marks must be between 0 and ${max}`); return }
+
+    setSaving(true)
+    const rows = entered.map(s => ({
+      exam_id: marksExam.id,
+      student_id: s.id,
+      marks_obtained: Number(marks[s.id]),
+      grade: gradeFor(Number(marks[s.id]), max),
+    }))
+
+    const { error } = await supabase.from('exam_results')
+      .upsert(rows, { onConflict: 'exam_id,student_id' })
+    setSaving(false)
+
+    if (error) { toast.error(dbErrorMessage(error)); return }
+    setSavedMarks({ ...marks })
+    toast.success(`Saved ${rows.length} result${rows.length === 1 ? '' : 's'}`)
+  }
+
+  const marksDirty = roster.some(s => (marks[s.id] ?? '') !== (savedMarks[s.id] ?? ''))
+
+  const filtered = exams.filter(e => {
+    const q = search.trim().toLowerCase()
+    return !q || e.name.toLowerCase().includes(q) || e.subject.toLowerCase().includes(q)
+  })
+
+  const upcoming = exams.filter(e => new Date(e.exam_date) >= new Date()).length
+  const subjects = new Set(exams.map(e => e.subject)).size
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-gray-900">Exams & Results</h2>
-          <p className="text-sm text-gray-500">Manage exams and enter marks</p>
-        </div>
-        <button onClick={() => setShowModal(true)} className="btn-primary flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Schedule Exam
-        </button>
+      <PageHeader
+        icon={FileText}
+        title="Exams & results"
+        subtitle={`${exams.length} exam${exams.length === 1 ? '' : 's'} scheduled`}
+        actions={
+          <button onClick={() => { setExamForm(EMPTY_EXAM); setErrors({}); setShowExam(true) }} className="btn btn-accent">
+            <Plus className="h-4 w-4" /> Schedule exam
+          </button>
+        }
+      />
+
+      <div className="stat-grid">
+        <StatCard label="Total exams" value={exams.length} icon={FileText} tone="primary" />
+        <StatCard label="Upcoming" value={upcoming} icon={TrendingUp} tone="accent" />
+        <StatCard label="Subjects" value={subjects} icon={Award} tone="green" />
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-fit">
-        {(['exams', 'results'] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${
-              activeTab === tab ? 'bg-white shadow text-[#1e3a5f]' : 'text-gray-500 hover:text-gray-700'
-            }`}>{tab}</button>
+      <Toolbar>
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style={{ color: 'var(--ink-faint)' }} />
+          <input
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="input pl-9" placeholder="Search exams by name or subject…" aria-label="Search exams"
+          />
+        </div>
+      </Toolbar>
+
+      <TableShell columns={['Exam', 'Class', 'Subject', 'Date', 'Max', 'Pass', 'Actions']}>
+        {loading ? (
+          <SkeletonRows cols={7} />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={FileText} title="No exams scheduled" hint="Schedule an exam to start recording marks." colSpan={7} />
+        ) : filtered.map(e => (
+          <tr key={e.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
+            <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>{e.name}</td>
+            <td className="table-cell">{e.classes?.name ?? '—'}</td>
+            <td className="table-cell">
+              <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>{e.subject}</span>
+            </td>
+            <td className="table-cell">{formatDate(e.exam_date)}</td>
+            <td className="table-cell tabular-nums">{e.max_marks}</td>
+            <td className="table-cell tabular-nums">{e.passing_marks}</td>
+            <td className="table-cell">
+              <div className="flex items-center gap-1.5">
+                <button onClick={() => openMarks(e)} className="btn btn-ghost btn-sm">
+                  <ClipboardList className="h-3.5 w-3.5" /> Enter marks
+                </button>
+                <button onClick={() => setDeleting(e)} className="btn btn-ghost btn-icon" aria-label={`Delete ${e.name}`}>
+                  <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
+                </button>
+              </div>
+            </td>
+          </tr>
         ))}
+      </TableShell>
+
+      <div className="panel-flat flex flex-wrap items-center justify-between gap-3 p-4">
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Need a consolidated report card across every subject?
+        </p>
+        <Link href="/report-card" className="btn btn-ghost btn-sm">
+          <Award className="h-3.5 w-3.5" /> Generate report cards
+        </Link>
       </div>
 
-      <div className="card overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b">
-            <tr>{['Exam Name', 'Class', 'Subject', 'Date', 'Max Marks', 'Pass Marks', 'Actions'].map(h => <th key={h} className="table-header">{h}</th>)}</tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {exams.map(e => (
-              <tr key={e.id} className="hover:bg-gray-50">
-                <td className="table-cell font-semibold">{e.name}</td>
-                <td className="table-cell">{e.class_name}</td>
-                <td className="table-cell">{e.subject}</td>
-                <td className="table-cell">{formatDate(e.exam_date)}</td>
-                <td className="table-cell">{e.max_marks}</td>
-                <td className="table-cell">{e.passing_marks}</td>
-                <td className="table-cell">
-                  <button onClick={() => openResults(e)} className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium">Enter Results</button>
-                </td>
+      {/* ── Schedule exam ─────────────────────────────── */}
+      <Modal
+        open={showExam}
+        onClose={() => setShowExam(false)}
+        title="Schedule an exam"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setShowExam(false)}>Cancel</button>
+            <button className="btn btn-primary" onClick={saveExam} disabled={saving}>
+              {saving ? 'Saving…' : 'Schedule'}
+            </button>
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label htmlFor="name" className="label">Exam name</label>
+            <input
+              id="name" value={examForm.name} onChange={e => setExamField('name', e.target.value)}
+              className={`input ${errors.name ? 'input-error' : ''}`} placeholder="Half-Yearly Examination"
+            />
+            {errors.name && <p className="field-error">{errors.name}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="class_id" className="label">Class</label>
+            <select
+              id="class_id" value={examForm.class_id} onChange={e => setExamField('class_id', e.target.value)}
+              className={`input ${errors.class_id ? 'input-error' : ''}`}
+            >
+              <option value="">Select…</option>
+              {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            {errors.class_id && <p className="field-error">{errors.class_id}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="subject" className="label">Subject</label>
+            <input
+              id="subject" value={examForm.subject} onChange={e => setExamField('subject', e.target.value)}
+              className={`input ${errors.subject ? 'input-error' : ''}`} placeholder="Mathematics"
+            />
+            {errors.subject && <p className="field-error">{errors.subject}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="exam_date" className="label">Date</label>
+            <input
+              id="exam_date" type="date" value={examForm.exam_date}
+              onChange={e => setExamField('exam_date', e.target.value)}
+              className={`input ${errors.exam_date ? 'input-error' : ''}`}
+            />
+            {errors.exam_date && <p className="field-error">{errors.exam_date}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="max_marks" className="label">Max marks</label>
+              <input
+                id="max_marks" type="number" min="1" value={examForm.max_marks}
+                onChange={e => setExamField('max_marks', e.target.value)}
+                className={`input ${errors.max_marks ? 'input-error' : ''}`}
+              />
+              {errors.max_marks && <p className="field-error">{errors.max_marks}</p>}
+            </div>
+            <div>
+              <label htmlFor="passing_marks" className="label">Pass marks</label>
+              <input
+                id="passing_marks" type="number" min="0" value={examForm.passing_marks}
+                onChange={e => setExamField('passing_marks', e.target.value)}
+                className={`input ${errors.passing_marks ? 'input-error' : ''}`}
+              />
+              {errors.passing_marks && <p className="field-error">{errors.passing_marks}</p>}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Bulk marks entry ──────────────────────────── */}
+      <Modal
+        open={!!marksExam}
+        onClose={() => setMarksExam(null)}
+        title={marksExam ? `${marksExam.name} — ${marksExam.subject}` : ''}
+        subtitle={marksExam ? `${marksExam.classes?.name} · max ${marksExam.max_marks} · pass ${marksExam.passing_marks}` : ''}
+        wide
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setMarksExam(null)}>Close</button>
+            <button className="btn btn-primary" onClick={saveMarks} disabled={saving || !marksDirty}>
+              <Save className="h-4 w-4" /> {saving ? 'Saving…' : marksDirty ? 'Save marks' : 'Saved'}
+            </button>
+          </>
+        }
+      >
+        {loadingRoster ? (
+          <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-10" />)}</div>
+        ) : roster.length === 0 ? (
+          <EmptyState icon={ClipboardList} title="No active students in this class" />
+        ) : (
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                {['Student', 'Adm. No.', 'Marks', 'Grade', 'Result'].map(h => (
+                  <th key={h} className="table-header">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {roster.map(s => {
+                const raw = marks[s.id] ?? ''
+                const n = Number(raw)
+                const max = Number(marksExam?.max_marks ?? 100)
+                const valid = raw !== '' && Number.isFinite(n) && n >= 0 && n <= max
+                return (
+                  <tr key={s.id} style={{ borderTop: '1px solid var(--edge)' }}>
+                    <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>{s.full_name}</td>
+                    <td className="table-cell font-mono text-xs">{s.admission_number}</td>
+                    <td className="table-cell">
+                      <input
+                        type="number" min="0" max={max} value={raw}
+                        onChange={e => setMarks(p => ({ ...p, [s.id]: e.target.value }))}
+                        aria-label={`Marks for ${s.full_name}`}
+                        className={`input w-24 py-1.5 text-center tabular-nums ${raw !== '' && !valid ? 'input-error' : ''}`}
+                      />
+                    </td>
+                    <td className="table-cell">
+                      {valid
+                        ? <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>
+                            {gradeFor(n, max)} · {Math.round(percentage(n, max))}%
+                          </span>
+                        : <span style={{ color: 'var(--ink-faint)' }}>—</span>}
+                    </td>
+                    <td className="table-cell">
+                      {valid && (
+                        <span
+                          className="badge"
+                          style={isPass(n, Number(marksExam?.passing_marks ?? 0))
+                            ? { background: 'var(--tint-success)', color: 'var(--success-deep)' }
+                            : { background: 'var(--tint-danger)', color: 'var(--danger-deep)' }}
+                        >
+                          {isPass(n, Number(marksExam?.passing_marks ?? 0)) ? 'Pass' : 'Fail'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </Modal>
 
-      {/* Schedule Exam Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
-            <div className="p-6 border-b"><h3 className="font-bold text-lg">Schedule Exam</h3></div>
-            <div className="p-6 grid grid-cols-2 gap-4">
-              <div className="col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Exam Name</label>
-                <input value={examForm.name} onChange={e => setExamForm(p => ({ ...p, name: e.target.value }))} className="input" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
-                <select value={examForm.class_id} onChange={e => setExamForm(p => ({ ...p, class_id: e.target.value }))} className="input">
-                  <option value="">Select</option>
-                  {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
-                <input value={examForm.subject} onChange={e => setExamForm(p => ({ ...p, subject: e.target.value }))} className="input" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                <input type="date" value={examForm.exam_date} onChange={e => setExamForm(p => ({ ...p, exam_date: e.target.value }))} className="input" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Max Marks</label>
-                <input type="number" value={examForm.max_marks} onChange={e => setExamForm(p => ({ ...p, max_marks: Number(e.target.value) }))} className="input" />
-              </div>
-            </div>
-            <div className="p-6 pt-0 flex justify-end gap-3">
-              <button onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-              <button onClick={handleSaveExam} className="btn-primary">Schedule</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Results Modal */}
-      {showResultModal && selectedExam && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl max-h-[80vh] flex flex-col">
-            <div className="p-6 border-b">
-              <h3 className="font-bold text-lg">{selectedExam.name} — Results</h3>
-              <p className="text-sm text-gray-500">Max: {selectedExam.max_marks} | Pass: {selectedExam.passing_marks}</p>
-            </div>
-            <div className="overflow-y-auto flex-1 p-6">
-              <div className="flex gap-3 mb-4">
-                <select value={resultForm.student_id} onChange={e => setResultForm(p => ({ ...p, student_id: e.target.value }))} className="input flex-1">
-                  <option value="">Select student</option>
-                  {students.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
-                </select>
-                <input type="number" placeholder="Marks" value={resultForm.marks_obtained}
-                  onChange={e => setResultForm(p => ({ ...p, marks_obtained: e.target.value }))} className="input w-24" />
-                <input placeholder="Grade" value={resultForm.grade}
-                  onChange={e => setResultForm(p => ({ ...p, grade: e.target.value }))} className="input w-20" />
-                <button onClick={saveResult} className="btn-primary text-sm">Save</button>
-              </div>
-              <table className="w-full">
-                <thead className="bg-gray-50"><tr>{['Student','Marks','Grade','Remarks'].map(h => <th key={h} className="table-header">{h}</th>)}</tr></thead>
-                <tbody className="divide-y">
-                  {results.map(r => (
-                    <tr key={r.id}>
-                      <td className="table-cell">{r.student_name}</td>
-                      <td className="table-cell font-bold">{r.marks_obtained}/{selectedExam.max_marks}</td>
-                      <td className="table-cell"><span className="badge bg-blue-100 text-blue-700">{r.grade}</span></td>
-                      <td className="table-cell text-gray-500">{r.remarks || '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="p-4 border-t flex justify-end">
-              <button onClick={() => setShowResultModal(false)} className="btn-secondary">Close</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Delete exam ───────────────────────────────── */}
+      <Modal
+        open={!!deleting}
+        onClose={() => setDeleting(null)}
+        title="Delete exam"
+        footer={
+          <>
+            <button className="btn btn-ghost" onClick={() => setDeleting(null)}>Cancel</button>
+            <button className="btn btn-danger" onClick={deleteExam}>Delete</button>
+          </>
+        }
+      >
+        <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+          Deleting <strong>{deleting?.name}</strong> also removes every result recorded against it.
+          This cannot be undone.
+        </p>
+      </Modal>
     </div>
   )
 }

@@ -1,248 +1,229 @@
 import type { Metadata } from 'next'
-import { ChevronRight, Smartphone, Monitor, Zap, Lock, BarChart3, Users } from 'lucide-react'
 import Link from 'next/link'
+import {
+  ChevronRight, GraduationCap, CalendarCheck, IndianRupee, Award,
+  Bus, Megaphone, ShieldCheck, FileText,
+} from 'lucide-react'
+import { Reveal, Magnetic } from '@/components/ui/Motion'
+import Tilt3D from '@/components/ui/Tilt3D'
 
 export const metadata: Metadata = {
-  title: 'GVN School Management | iOS 27 Liquid Glass UI',
-  description: 'Premium school management system with iOS 27 liquid glass polished UI. Mobile-first responsive design.',
-  viewport: 'width=device-width, initial-scale=1.0, maximum-scale=5.0',
+  title: 'Geethanjali Vidya Nilayam — School Management',
+  description:
+    'Admissions, attendance, exams, fees, transport and parent communication for Geethanjali Vidya Nilayam, Visakhapatnam.',
 }
+
+const MODULES = [
+  { icon: GraduationCap,  title: 'Students',   desc: 'Admissions, classes and sections in one register.' },
+  { icon: CalendarCheck,  title: 'Attendance', desc: 'Mark a whole section in one pass; parents see it same day.' },
+  { icon: Award,          title: 'Exams',      desc: 'Marks entry, CBSE grade bands and printable report cards.' },
+  { icon: IndianRupee,    title: 'Fees',       desc: 'Invoices, collections and numbered receipts.' },
+  { icon: Bus,            title: 'Transport',  desc: 'Routes, stops, vehicles and student allocation.' },
+  { icon: Megaphone,      title: 'Notices',    desc: 'Circulars targeted at the roles that need them.' },
+]
 
 export default function LandingPage() {
   return (
-    <div className="w-full min-h-screen bg-liquid-gradient overflow-hidden">
-      {/* Background Effects */}
-      <div className="fixed inset-0 bg-grid-pattern pointer-events-none" />
-      <div className="fixed inset-0 bg-black/5 pointer-events-none" />
+    <div className="relative min-h-screen overflow-hidden">
+      {/* ── Cinematic ground ────────────────────────────── */}
+      <div
+        className="aurora"
+        style={{
+          background:
+            'radial-gradient(40% 42% at 28% 22%, rgba(21,156,138,.24), transparent 70%),' +
+            'radial-gradient(46% 44% at 76% 40%, rgba(51,80,127,.22), transparent 74%)',
+        }}
+      />
+      <div
+        className="aurora aurora-2"
+        style={{
+          background:
+            'radial-gradient(42% 40% at 72% 78%, rgba(63,184,166,.20), transparent 72%),' +
+            'radial-gradient(50% 46% at 22% 68%, rgba(31,55,99,.24), transparent 76%)',
+        }}
+      />
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header/Navigation */}
-        <header className="sticky top-0 z-20 backdrop-blur-xl bg-black/10 border-b border-white/10">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">GVN</span>
-              </div>
-              <div>
-                <h1 className="text-white font-bold text-lg hidden sm:block">GVN School</h1>
-                <p className="text-xs text-gray-300 hidden sm:block">Liquid Glass UI</p>
-              </div>
+      <header
+        className="sticky top-0 z-20 safe-t"
+        style={{ background: 'var(--surface)', borderBottom: '1px solid var(--edge)', boxShadow: 'var(--lift-1)' }}
+      >
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-5 sm:py-3.5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className="plate grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white"
+              style={{
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), inset 0 1px 0 rgba(255,255,255,.3)',
+              }}
+            >
+              <GraduationCap className="h-5 w-5" />
             </div>
-            <Link href="/login" className="btn-liquid-primary text-sm sm:text-base">
-              Login <ChevronRight className="inline w-4 h-4 ml-1" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold leading-tight sm:text-base" style={{ color: 'var(--primary)', fontFamily: 'var(--font-serif), serif' }}>
+                Geethanjali Vidya Nilayam
+              </p>
+              <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>Peddawaltair, Visakhapatnam</p>
+            </div>
+          </div>
+          <Magnetic as="span" className="shrink-0">
+            <Link href="/login" className="btn btn-primary">
+              <span className="hidden sm:inline">Sign in</span>
+              <span className="sm:hidden">Sign in</span>
+              <ChevronRight className="h-4 w-4" />
             </Link>
-          </div>
-        </header>
+          </Magnetic>
+        </div>
+      </header>
 
-        {/* Hero Section - Mobile First */}
-        <section className="relative px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          {/* Floating Elements */}
-          <div className="absolute -top-20 -right-20 w-40 h-40 bg-gold-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-
-          <div className="relative">
-            {/* Main Heading */}
-            <div className="text-center mb-8 sm:mb-12">
-              <div className="inline-block mb-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20">
-                <p className="text-xs sm:text-sm text-white/80">
-                  ✨ iOS 27 Liquid Glass Polished UI
-                </p>
-              </div>
-
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
-                Premium School
-                <br className="hidden sm:block" />
-                <span className="text-gradient-gold">Management System</span>
-              </h1>
-
-              <p className="text-sm sm:text-base md:text-lg text-gray-200 max-w-2xl mx-auto mb-8">
-                Geethanjali Vidya Nilayam's comprehensive full-stack solution with glassmorphic design, 
-                liquid animations, and seamless mobile-to-desktop experience.
-              </p>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-8">
-                <Link href="/login" className="btn-liquid-primary w-full sm:w-auto">
-                  View Dashboard
-                </Link>
-                <a 
-                  href="https://github.com/dileep12072024-sudo/gvn-school-management" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-liquid-glass w-full sm:w-auto"
-                >
-                  View on GitHub
-                </a>
-              </div>
-            </div>
-
-            {/* Feature Grid - Mobile Optimized */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-12 sm:mt-16">
-              {features.map((feature, idx) => (
-                <div 
-                  key={idx}
-                  className="liquid-glass rounded-2xl p-4 sm:p-6 hover:scale-105 transition-transform duration-300 group"
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                      <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-semibold text-white mb-1">{feature.title}</h3>
-                    <p className="text-xs text-gray-300 hidden sm:block">{feature.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+      <main className="relative mx-auto max-w-5xl px-4 sm:px-5">
+        {/* ── Hero ────────────────────────────────────── */}
+        <section className="py-16 text-center sm:py-24">
+          <p
+            className="deal mx-auto mb-5 inline-block rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide"
+            style={{ '--i': 0, background: 'var(--surface-sunk)', color: 'var(--accent-deep)', boxShadow: 'var(--sunk)' } as React.CSSProperties}
+          >
+            Andhra Pradesh State Board · Academic year 2024–25
+          </p>
+          <h1
+            className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl"
+            style={{ color: 'var(--ink)', fontFamily: 'var(--font-serif), serif' }}
+          >
+            <span className="deal block" style={{ '--i': 1 } as React.CSSProperties}>The whole school,</span>
+            <span className="deal block" style={{ '--i': 2 } as React.CSSProperties}>on one desk.</span>
+          </h1>
+          <p
+            className="deal mx-auto mt-5 max-w-xl text-base leading-relaxed"
+            style={{ '--i': 3, color: 'var(--ink-soft)' } as React.CSSProperties}
+          >
+            Attendance, marks, fees and transport for staff — and a portal where parents can see their own
+            child&rsquo;s day without phoning the office.
+          </p>
+          <div
+            className="deal mt-8 flex flex-col justify-center gap-3 sm:flex-row"
+            style={{ '--i': 4 } as React.CSSProperties}
+          >
+            <Magnetic as="span">
+              <Link href="/login" className="btn btn-primary w-full sm:w-auto">Sign in to your account</Link>
+            </Magnetic>
+            <Magnetic as="span">
+              <a
+                href="https://github.com/dileep12072024-sudo/gvn-school-management"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-ghost w-full sm:w-auto"
+              >
+                Source on GitHub
+              </a>
+            </Magnetic>
           </div>
         </section>
 
-        {/* UI Effects Showcase - Mobile First */}
-        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
-              Premium <span className="text-gradient-gold">UI Components</span>
+        <hr style={{ border: 0, borderTop: '1px solid var(--edge)' }} />
+
+        {/* ── Modules ─────────────────────────────────── */}
+        <section className="py-16">
+          <Reveal>
+            <h2
+              className="mb-8 text-center text-2xl font-bold"
+              style={{ color: 'var(--ink)', fontFamily: 'var(--font-serif), serif' }}
+            >
+              What it covers
             </h2>
-            <p className="text-sm sm:text-base text-gray-300">Mobile-first responsive design with liquid glass effects</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {/* Card 1 - Stat Card */}
-            <div className="stat-card-liquid">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-300">Total Students</p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2">1,240</h3>
-                </div>
-                <Users className="w-8 h-8 sm:w-10 sm:h-10 text-gold-400" />
-              </div>
-              <p className="text-xs text-green-400">↑ 12% from last month</p>
-            </div>
-
-            {/* Card 2 - Revenue */}
-            <div className="stat-card-liquid">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-300">Monthly Revenue</p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2">₹2.4L</h3>
-                </div>
-                <BarChart3 className="w-8 h-8 sm:w-10 sm:h-10 text-gold-400" />
-              </div>
-              <p className="text-xs text-green-400">↑ 8% from last month</p>
-            </div>
-
-            {/* Card 3 - Attendance */}
-            <div className="stat-card-liquid">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs sm:text-sm text-gray-300">Attendance Rate</p>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mt-2">94.2%</h3>
-                </div>
-                <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-gold-400" />
-              </div>
-              <p className="text-xs text-green-400">↑ 3% from last week</p>
-            </div>
-          </div>
-        </section>
-
-        {/* Demo Accounts Section */}
-        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          <div className="frosted-modal rounded-3xl p-6 sm:p-8 lg:p-12">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">🔐 Demo Accounts</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {demoAccounts.map((account, idx) => (
-                <div key={idx} className="bg-white/50 rounded-2xl p-4 sm:p-6 backdrop-blur-sm border border-white/20">
-                  <h3 className="font-semibold text-gray-900 text-base sm:text-lg mb-3">{account.role}</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="text-gray-600 font-medium">Email:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono">{account.email}</code></p>
-                    <p><span className="text-gray-600 font-medium">Password:</span> <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono">{account.password}</code></p>
+          </Reveal>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {MODULES.map((m, i) => (
+              <Reveal key={m.title} index={i % 3}>
+                <Tilt3D as="article" className="panel h-full p-6">
+                  <div
+                    className="plate float layer-1 mb-4 grid h-11 w-11 place-items-center rounded-[var(--radius)] text-white"
+                    style={{
+                      '--bob-i': i,
+                      background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+                      boxShadow: '0 3px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.25)',
+                    } as React.CSSProperties}
+                  >
+                    <m.icon className="h-5 w-5" />
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-8 p-4 bg-blue-50 rounded-2xl border border-blue-200">
-              <p className="text-sm text-blue-900">
-                <span className="font-semibold">ℹ️ Note:</span> Use any demo account above to explore different dashboard roles. All features are enabled!
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* Technology Stack - Mobile First */}
-        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">
-              Built with Modern <span className="text-gradient-gold">Technologies</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {techStack.map((tech, idx) => (
-              <div key={idx} className="liquid-glass rounded-2xl p-4 sm:p-6 text-center hover:scale-105 transition-transform">
-                <div className="text-3xl sm:text-4xl mb-2">{tech.icon}</div>
-                <p className="text-xs sm:text-sm font-medium text-white">{tech.name}</p>
-              </div>
+                  <h3 className="layer-1 font-bold" style={{ color: 'var(--ink)' }}>{m.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{m.desc}</p>
+                </Tilt3D>
+              </Reveal>
             ))}
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-6xl mx-auto">
-          <div className="liquid-glass rounded-3xl p-8 sm:p-12 lg:p-16 text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
-              Ready to Explore? 🚀
-            </h2>
-            <p className="text-sm sm:text-base text-gray-200 mb-8 max-w-2xl mx-auto">
-              Experience the premium iOS 27 Liquid Glass UI with mobile-first responsive design
-            </p>
-            <Link href="/login" className="btn-liquid-primary inline-block">
-              Enter Dashboard Now
-            </Link>
-          </div>
+        <hr style={{ border: 0, borderTop: '1px solid var(--edge)' }} />
+
+        {/* ── Access ──────────────────────────────────── */}
+        <section className="py-16">
+          <Reveal>
+            <div className="panel p-6 sm:p-10">
+              <div className="flex flex-col items-start gap-4 sm:flex-row">
+                <div
+                  className="plate float grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
+                  style={{
+                    background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+                    boxShadow: '0 3px 0 var(--accent-deep), inset 0 1px 0 rgba(255,255,255,.3)',
+                  }}
+                >
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--ink)' }}>Accounts come from the office</h2>
+                  <p className="mt-2 max-w-xl text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+                    There is no public sign-up. Staff, parent and student logins are issued by the school and
+                    scoped by role — a parent sees only their own child&rsquo;s attendance, marks and fees.
+                    If you need access or a password reset, contact the school office.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {['Organiser', 'Principal', 'Vice principal', 'Teacher', 'Parent'].map((r, i) => (
+                      <span
+                        key={r}
+                        className="deal rounded-full px-3 py-1.5 text-xs font-semibold"
+                        style={{ '--i': i, background: 'var(--surface-sunk)', color: 'var(--ink-soft)', boxShadow: 'var(--sunk)' } as React.CSSProperties}
+                      >
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </section>
 
-        {/* Footer */}
-        <footer className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 border-t border-white/10 backdrop-blur-xl bg-black/10">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center">
-              <p className="text-sm text-gray-300 mb-2">
-                © 2024 Geethanjali Vidya Nilayam. Built with ❤️ by NETETI DILIP
-              </p>
-              <p className="text-xs text-gray-500">
-                iOS 27 Liquid Glass UI • Next.js 14 • Cloudflare Pages • Deployed Live 🌍
-              </p>
-            </div>
+        <hr style={{ border: 0, borderTop: '1px solid var(--edge)' }} />
+
+        {/* ── Parent portal ───────────────────────────── */}
+        <section className="py-16">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {[
+              { icon: CalendarCheck, k: 'Attendance', v: 'Day-by-day, with a running percentage.' },
+              { icon: FileText,      k: 'Report card', v: 'Printable, with CGPA and grade bands.' },
+              { icon: IndianRupee,   k: 'Fees', v: 'What is due, what is paid, receipt on demand.' },
+            ].map((x, i) => (
+              <Reveal key={x.k} index={i}>
+                <div className="plaque h-full p-6">
+                  <x.icon className="icon-pop float mb-3 h-5 w-5" style={{ '--bob-i': i, color: 'var(--accent)' } as React.CSSProperties} />
+                  <p className="font-bold" style={{ color: 'var(--ink)' }}>{x.k}</p>
+                  <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>{x.v}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
-        </footer>
-      </div>
+        </section>
+      </main>
+
+      <footer className="relative safe-b" style={{ borderTop: '1px solid var(--edge)', background: 'var(--surface)' }}>
+        <div className="mx-auto max-w-5xl px-5 py-8 text-center">
+          <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+            © 2024 Geethanjali Vidya Nilayam, Peddawaltair, Visakhapatnam
+          </p>
+          <p className="mt-1 text-xs" style={{ color: 'var(--ink-faint)' }}>
+            Next.js · Supabase · Cloudflare Pages
+          </p>
+        </div>
+      </footer>
     </div>
   )
 }
-
-const features = [
-  { icon: Smartphone, title: 'Mobile First', desc: 'Optimized for all devices' },
-  { icon: Monitor, title: 'Responsive', desc: 'Perfect on desktop too' },
-  { icon: Zap, title: 'Lightning Fast', desc: 'Powered by Next.js 14' },
-  { icon: Lock, title: 'Secure Auth', desc: 'Role-based access control' },
-  { icon: BarChart3, title: 'Analytics', desc: 'Real-time dashboards' },
-  { icon: Users, title: '6 Roles', desc: 'Complete hierarchy' },
-]
-
-const demoAccounts = [
-  { role: '👨‍💼 Organiser', email: 'organiser@gvn.edu.in', password: 'GVN@2024!' },
-  { role: '👔 Principal', email: 'principal@gvn.edu.in', password: 'GVN@2024!' },
-  { role: '📋 Vice Principal', email: 'vp@gvn.edu.in', password: 'GVN@2024!' },
-  { role: '🧑‍🏫 Teacher', email: 'teacher@gvn.edu.in', password: 'GVN@2024!' },
-  { role: '👨‍👩‍👧 Parent', email: 'parent@gvn.edu.in', password: 'GVN@2024!' },
-  { role: '🎓 Student', email: 'student@gvn.edu.in', password: 'GVN@2024!' },
-]
-
-const techStack = [
-  { icon: '⚛️', name: 'Next.js 14' },
-  { icon: '🎨', name: 'Tailwind CSS' },
-  { icon: '💎', name: 'Liquid Glass' },
-  { icon: '🗄️', name: 'Supabase' },
-  { icon: '☁️', name: 'Cloudflare' },
-]

@@ -2,117 +2,132 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, ChevronDown, LogOut, Settings, Menu, X } from 'lucide-react'
-import { getInitials, getRoleBadgeColor, getRoleLabel, cn } from '@/lib/utils'
-import type { MockProfile } from '@/lib/mock-auth'
+import { ChevronDown, LogOut, Settings, Menu, PanelLeftClose } from 'lucide-react'
+import { getInitials, getRoleLabel, cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import { useExitAnimation } from '@/lib/exit'
+import type { Profile } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-interface HeaderProps {
-  profile: MockProfile | null
+export default function Header({
+  profile, sidebarOpen, onMenuClick,
+}: {
+  profile: Profile
   sidebarOpen?: boolean
   onMenuClick?: () => void
-}
-
-export default function Header({ profile, sidebarOpen, onMenuClick }: HeaderProps) {
+}) {
   const [open, setOpen] = useState(false)
+  const menu = useExitAnimation(open)
+  const [signingOut, setSigningOut] = useState(false)
   const router = useRouter()
+  const { signOut } = useAuth()
 
   const handleSignOut = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    setSigningOut(true)
+    await signOut()
     toast.success('Signed out')
-    router.push('/login')
-    router.refresh()
   }
 
   return (
     <header
-      className="h-16 border-b border-gray-200/60 flex items-center justify-between px-4 md:px-6 shrink-0 relative z-10"
+      className="relative z-10 flex h-16 shrink-0 items-center justify-between gap-2 px-3 sm:gap-3 sm:px-4 md:px-6"
       style={{
-        background: 'rgba(255, 255, 255, 0.82)',
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
+        background: 'linear-gradient(180deg, var(--surface) 0%, var(--surface-sunk) 100%)',
+        borderBottom: '1px solid var(--edge-strong)',
+        boxShadow: '0 1px 0 rgba(255,255,255,.8) inset, 0 2px 8px rgba(22,32,46,.06)',
       }}
     >
-      {/* Left: toggle + title */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           onClick={onMenuClick}
-          className="p-2 rounded-xl hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-800"
           aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          aria-expanded={!!sidebarOpen}
+          className="btn btn-ghost btn-icon"
         >
-          {sidebarOpen
-            ? <X    className="w-5 h-5" />
-            : <Menu className="w-5 h-5" />}
+          {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
-        <div>
-          <h1 className="text-sm font-semibold text-gray-900 leading-tight">Geethanjali Vidya Nilayam</h1>
-          <p className="text-xs text-gray-400">Peddawaltair, Visakhapatnam</p>
+        <div className="min-w-0">
+          <h1 className="truncate text-sm font-bold leading-tight" style={{ color: 'var(--ink)' }}>
+            Geethanjali Vidya Nilayam
+          </h1>
+          <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>
+            Peddawaltair, Visakhapatnam
+          </p>
         </div>
       </div>
 
-      {/* Right: bell + user */}
-      <div className="flex items-center gap-2">
-
-        {/* Notification bell with live ping */}
-        <button className="relative p-2 rounded-xl hover:bg-gray-100 transition-colors">
-          <Bell className="w-5 h-5 text-gray-500" />
-          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
-          </span>
+      <div className="relative shrink-0">
+        <button
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          aria-haspopup="menu"
+          className="flex items-center gap-2.5 rounded-[var(--radius-sm)] px-2 py-1.5 transition-colors hover:bg-black/[.04]"
+        >
+          <div
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-sm)] text-white"
+            style={{
+              background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+              boxShadow: '0 2px 0 var(--primary-deep), 0 3px 8px rgba(15,33,56,.28), inset 0 1px 0 rgba(255,255,255,.25)',
+            }}
+          >
+            <span className="text-xs font-bold">{getInitials(profile.full_name || 'U')}</span>
+          </div>
+          <div className="hidden text-left sm:block">
+            <p className="text-sm font-semibold leading-tight" style={{ color: 'var(--ink)' }}>
+              {profile.full_name}
+            </p>
+            <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{getRoleLabel(profile.role)}</p>
+          </div>
+          <ChevronDown
+            className={cn('h-4 w-4 transition-transform duration-200', open && 'rotate-180')}
+            style={{ color: 'var(--ink-faint)' }}
+          />
         </button>
 
-        {/* User dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setOpen(o => !o)}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-gray-100 transition-colors"
-          >
+        {menu.mounted && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
-              style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #2e5a96 100%)' }}
+              role="menu"
+              className={cn('panel genie absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden p-0', menu.closing && 'genie-closing')}
+              style={{ boxShadow: 'var(--lift-3)' }}
             >
-              <span className="text-xs font-bold text-white">{getInitials(profile?.full_name ?? 'U')}</span>
-            </div>
-            <div className="hidden sm:block text-left">
-              <p className="text-sm font-medium text-gray-900 leading-tight">{profile?.full_name ?? 'User'}</p>
-              <p className="text-xs text-gray-400">{getRoleLabel(profile?.role ?? '')}</p>
-            </div>
-            <ChevronDown className={cn('w-4 h-4 text-gray-400 transition-transform duration-200', open && 'rotate-180')} />
-          </button>
-
-          {open && (
-            <>
-              <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-              <div
-                className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-gray-100 shadow-xl z-50 overflow-hidden"
-                style={{ background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
-              >
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-900">{profile?.full_name}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{profile?.email}</p>
-                  <span className={cn('badge mt-1.5 inline-block', getRoleBadgeColor(profile?.role ?? ''))}>
-                    {getRoleLabel(profile?.role ?? '')}
-                  </span>
-                </div>
-                <div className="py-1.5">
-                  <button
-                    onClick={() => { setOpen(false); router.push('/settings') }}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <Settings className="w-4 h-4 text-gray-400" /> Settings
-                  </button>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" /> Sign Out
-                  </button>
-                </div>
+              <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--edge)' }}>
+                <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>
+                  {profile.full_name}
+                </p>
+                <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--ink-faint)' }}>
+                  {profile.email}
+                </p>
+                <span
+                  className="badge mt-2"
+                  style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}
+                >
+                  {getRoleLabel(profile.role)}
+                </span>
               </div>
-            </>
-          )}
-        </div>
+              <div className="p-1.5">
+                <button
+                  role="menuitem"
+                  onClick={() => { setOpen(false); router.push('/settings') }}
+                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm transition-colors hover:bg-black/[.04]"
+                  style={{ color: 'var(--ink-soft)' }}
+                >
+                  <Settings className="h-4 w-4" style={{ color: 'var(--ink-faint)' }} /> Settings
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={handleSignOut}
+                  disabled={signingOut}
+                  className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm transition-colors hover:bg-red-50 disabled:opacity-60"
+                  style={{ color: 'var(--danger)' }}
+                >
+                  <LogOut className="h-4 w-4" /> {signingOut ? 'Signing out…' : 'Sign out'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </header>
   )
