@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase'
 import { formatDate, dbErrorMessage } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { isStaff, ALL_ROLES } from '@/lib/nav'
-import { PageHeader, Modal, EmptyState, Tilt3D } from '@/components/ui'
+import { PageHeader, Modal, EmptyState, Tilt3D, Segmented } from '@/components/ui'
 
 const DOC_TYPES = ['circular', 'syllabus', 'portfolio', 'other'] as const
 
@@ -110,18 +110,13 @@ export default function DocumentsPage() {
         )}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {['all', ...DOC_TYPES].map(t => (
-          <button
-            key={t}
-            onClick={() => setTypeFilter(t)}
-            aria-pressed={typeFilter === t}
-            className={`btn btn-sm capitalize ${typeFilter === t ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        size="sm"
+        className="flex-wrap"
+        value={typeFilter}
+        onChange={setTypeFilter}
+        options={['all', ...DOC_TYPES].map(t => ({ value: t, label: t }))}
+      />
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

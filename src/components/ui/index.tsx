@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import Tilt3D from './Tilt3D'
 
 export { default as Tilt3D } from './Tilt3D'
+export { default as Segmented, type SegOption } from './Segmented'
 
 /* ── Page header ─────────────────────────────────────────── */
 

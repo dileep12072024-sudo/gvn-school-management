@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase'
 import { toPayload, validate, dbErrorMessage, required, positive, type Rule } from '@/lib/utils'
 import {
   PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows, Tilt3D,
+  Segmented,
 } from '@/components/ui'
 
 const EMPTY_CLASS = { name: '', grade: '1' }
@@ -131,29 +132,14 @@ export default function ClassesPage() {
         <StatCard label="Students enrolled" value={Object.values(counts).reduce((a, b) => a + b, 0)} icon={Users} tone="green" />
       </div>
 
-      {/* Segmented control — a milled switch, not a pill */}
-      <div
-        className="inline-flex gap-1 rounded-[var(--radius-sm)] p-1"
-        style={{ background: 'var(--surface-sunk)', border: '1px solid var(--edge-strong)', boxShadow: 'var(--sunk)' }}
-        role="tablist"
-      >
-        {(['classes', 'sections'] as const).map(t => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTab(t)}
-            className="rounded-[8px] px-4 py-1.5 text-sm font-semibold capitalize transition-all duration-200"
-            style={tab === t ? {
-              background: 'linear-gradient(180deg, var(--surface), var(--surface-sunk))',
-              color: 'var(--navy)',
-              boxShadow: '0 1px 2px rgba(22,32,46,.14), inset 0 1px 0 rgba(255,255,255,.9)',
-            } : { color: 'var(--ink-faint)' }}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'classes', label: 'Classes', icon: BookOpen },
+          { value: 'sections', label: 'Sections', icon: LayoutGrid },
+        ]}
+      />
 
       {tab === 'classes' ? (
         loading ? (

@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState, useMemo, useCallback } from 'react'
-import { Plus, Bus, MapPin, Trash2 } from 'lucide-react'
+import { Plus, Bus, MapPin, Trash2, Route } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
 import { toPayload, validate, dbErrorMessage, required, positive, type Rule } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { isAdmin } from '@/lib/nav'
-import { PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows } from '@/components/ui'
+import { PageHeader, StatCard, Modal, TableShell, EmptyState, SkeletonRows, Segmented } from '@/components/ui'
 
 const EMPTY_ROUTE = { route_number: '', route_name: '', stops: '' }
 const EMPTY_VEHICLE = { vehicle_number: '', vehicle_type: 'bus', capacity: 40, route_id: '', driver_id: '' }
@@ -129,18 +129,14 @@ export default function TransportPage() {
         />
       </div>
 
-      <div className="panel-flat inline-flex gap-1 p-1.5">
-        {(['routes', 'vehicles'] as const).map(t => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            aria-pressed={tab === t}
-            className={`btn btn-sm capitalize ${tab === t ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: 'routes', label: 'Routes', icon: Route },
+          { value: 'vehicles', label: 'Vehicles', icon: Bus },
+        ]}
+      />
 
       {tab === 'routes' ? (
         loading ? (

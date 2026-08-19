@@ -1,5 +1,6 @@
 'use client'
 
+import { useLayoutEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -33,6 +34,28 @@ const ICONS: Record<string, typeof Users> = {
 export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: () => void }) {
   const pathname = usePathname()
   const visible = NAV.filter(i => !i.hidden && i.roles.includes(role))
+  const nav = useRef<HTMLElement>(null)
+
+  // The active highlight is one rail that slides between links rather than a
+  // background that blinks off one row and on to another. Absolutely
+  // positioned inside the scrolling <nav>, so it scrolls with the list.
+  useLayoutEffect(() => {
+    const el = nav.current
+    if (!el) return
+    const place = () => {
+      const active = el.querySelector<HTMLElement>('[aria-current="page"]')
+      if (!active) { delete el.dataset.ready; return }
+      el.style.setProperty('--x', `${active.offsetLeft}px`)
+      el.style.setProperty('--y', `${active.offsetTop}px`)
+      el.style.setProperty('--w', `${active.offsetWidth}px`)
+      el.style.setProperty('--h', `${active.offsetHeight}px`)
+    }
+    place()
+    const raf = requestAnimationFrame(() => { if (el.querySelector('[aria-current="page"]')) el.dataset.ready = 'y' })
+    const ro = new ResizeObserver(place)
+    ro.observe(el)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [pathname, role])
 
   const handleNavClick = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) onClose?.()
@@ -76,7 +99,8 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
       </div>
 
       {/* ── Navigation ────────────────────────────────── */}
-      <nav className="scrollbar-hide flex-1 overflow-y-auto px-3 py-4">
+      <nav ref={nav} className="scrollbar-hide relative flex-1 overflow-y-auto px-3 py-4">
+        <span className="nav-rail" aria-hidden />
         {NAV_GROUPS.map(group => {
           const items = visible.filter(i => i.group === group)
           if (!items.length) return null
@@ -101,18 +125,7 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
                         'group relative flex items-center gap-3 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm font-medium transition-all duration-200',
                         active ? 'text-white' : 'text-white/50 hover:bg-white/[.07] hover:text-white/90',
                       )}
-                      style={active ? {
-                        background: 'linear-gradient(180deg, rgba(217,169,78,.22), rgba(184,135,59,.12))',
-                        boxShadow: 'inset 0 1px 0 rgba(255,255,255,.14), 0 1px 3px rgba(0,0,0,.3)',
-                      } : undefined}
                     >
-                      {/* Brass tab on the active item */}
-                      {active && (
-                        <span
-                          className="absolute inset-y-1.5 left-0 w-[3px] rounded-r-full"
-                          style={{ background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))' }}
-                        />
-                      )}
                       <Icon
                         className={cn('h-4 w-4 shrink-0 transition-colors', !active && 'text-white/35 group-hover:text-white/70')}
                         style={active ? { color: 'var(--brass-lift)' } : undefined}
