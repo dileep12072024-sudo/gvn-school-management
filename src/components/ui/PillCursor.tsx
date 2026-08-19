@@ -80,6 +80,7 @@ export default function PillCursor() {
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
       tx = e.clientX; ty = e.clientY
+      wake()
       if (!seen) {
         seen = true
         cx = tx; cy = ty
@@ -89,15 +90,23 @@ export default function PillCursor() {
       aim(e.target as Element | null)
     }
 
-    const onDown = () => { press = 0.9 }
-    const onUp = () => { press = 1 }
+    const onDown = () => { press = 0.9; wake() }
+    const onUp = () => { press = 1; wake() }
     const onLeave = () => {
       seen = false
       p.style.opacity = '0'; d.style.opacity = '0'
       document.documentElement.classList.remove('pill-on')
     }
     // A docked rect goes stale the moment the page moves under it.
-    const onScroll = () => { if (p.dataset.docked === 'y') free() }
+    const onScroll = () => { if (p.dataset.docked === 'y') { free(); wake() } }
+
+    // width/height/border-radius are *layout* properties. Writing them every
+    // frame makes the browser re-run layout sixty times a second for a piece of
+    // decoration. They are only written here when they have moved a visible
+    // amount, so a settled pill costs nothing — and once the box and the
+    // pointer are both at rest the loop stops entirely until the next event.
+    let pw = -1, ph = -1, pr = -1
+    let idle = 0
 
     const tick = () => {
       cx += (nx - cx) * CHASE
@@ -105,13 +114,20 @@ export default function PillCursor() {
       cw += (nw * press - cw) * MORPH
       ch += (nh * press - ch) * MORPH
       cr += (nr - cr) * MORPH
-      p.style.width = `${cw.toFixed(2)}px`
-      p.style.height = `${ch.toFixed(2)}px`
-      p.style.borderRadius = `${cr.toFixed(2)}px`
-      p.style.transform = `translate3d(${(cx - cw / 2).toFixed(2)}px, ${(cy - ch / 2).toFixed(2)}px, 0)`
+
+      if (Math.abs(cw - pw) > 0.4) p.style.width = `${(pw = cw).toFixed(1)}px`
+      if (Math.abs(ch - ph) > 0.4) p.style.height = `${(ph = ch).toFixed(1)}px`
+      if (Math.abs(cr - pr) > 0.4) p.style.borderRadius = `${(pr = cr).toFixed(1)}px`
+      p.style.transform = `translate3d(${(cx - cw / 2).toFixed(1)}px, ${(cy - ch / 2).toFixed(1)}px, 0)`
       d.style.transform = `translate3d(${tx - 2.5}px, ${ty - 2.5}px, 0)`
+
+      const rest = Math.abs(nx - cx) < .5 && Math.abs(ny - cy) < .5 &&
+                   Math.abs(nw * press - cw) < .5 && Math.abs(nh * press - ch) < .5
+      if (rest && ++idle > 2) { raf = 0; return }
+      if (!rest) idle = 0
       raf = requestAnimationFrame(tick)
     }
+    const wake = () => { if (!raf) { idle = 0; raf = requestAnimationFrame(tick) } }
     raf = requestAnimationFrame(tick)
 
     window.addEventListener('pointermove', onMove, { passive: true })
@@ -120,7 +136,7 @@ export default function PillCursor() {
     window.addEventListener('scroll', onScroll, { passive: true, capture: true })
     document.addEventListener('pointerleave', onLeave)
     return () => {
-      cancelAnimationFrame(raf)
+      if (raf) cancelAnimationFrame(raf)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerdown', onDown)
       window.removeEventListener('pointerup', onUp)

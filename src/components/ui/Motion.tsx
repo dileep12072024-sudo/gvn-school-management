@@ -30,14 +30,18 @@ export function Magnetic({
     if (!window.matchMedia('(hover: hover)').matches) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
+    // getBoundingClientRect() forces a synchronous layout. Calling it from a
+    // global pointermove handler means the browser re-lays-out the page on
+    // every mouse move — for one button. The rect only changes when the page
+    // scrolls or resizes, so measure then and read the cached box in between.
+    let box = el.getBoundingClientRect()
+    const measure = () => { box = el.getBoundingClientRect() }
+
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return
-      const r = el.getBoundingClientRect()
-      const cx = r.left + r.width / 2
-      const cy = r.top + r.height / 2
-      const dx = e.clientX - cx
-      const dy = e.clientY - cy
-      const near = Math.hypot(dx, dy) < Math.max(r.width, r.height) / 2 + radius
+      const dx = e.clientX - (box.left + box.width / 2)
+      const dy = e.clientY - (box.top + box.height / 2)
+      const near = Math.hypot(dx, dy) < Math.max(box.width, box.height) / 2 + radius
 
       if (near) {
         el.style.setProperty('--dx', `${(dx * strength).toFixed(1)}px`)
@@ -50,7 +54,13 @@ export function Magnetic({
       }
     }
     window.addEventListener('pointermove', onMove, { passive: true })
-    return () => window.removeEventListener('pointermove', onMove)
+    window.addEventListener('scroll', measure, { passive: true, capture: true })
+    window.addEventListener('resize', measure, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('scroll', measure, { capture: true })
+      window.removeEventListener('resize', measure)
+    }
   }, [on, strength, radius])
 
   return (

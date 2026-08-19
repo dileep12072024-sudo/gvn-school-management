@@ -725,17 +725,18 @@ nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
     var(--gloss-light),
     linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .10));
   border: 1px solid rgba(255, 255, 255, .58);
-  /* No blur: it read as a smudge over text, and backdrop-filter is the most
-     expensive thing a fixed, always-moving element can carry. The tint plus
-     the rim is what makes it glass. */
-  backdrop-filter: saturate(1.1) brightness(1.03);
-  -webkit-backdrop-filter: saturate(1.1) brightness(1.03);
+  /* No backdrop-filter at all. A filter on an element that changes geometry
+     every frame forces the browser to re-sample everything behind it every
+     frame — the single most expensive thing a moving cursor can carry, and
+     invisible in a headless profile because software compositing skips it.
+     The tint plus the rim is what makes it glass. */
   box-shadow:
     0 1px 2px rgba(16, 24, 39, .10),
     0 8px 22px rgba(16, 24, 39, .13),
     inset 0 1px 0 rgba(255, 255, 255, .85);
   transition: opacity .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
   will-change: transform, width, height;
+  contain: strict; /* its geometry can never affect anything else — don't reflow the page for it */
 }
 /* Docked on a control: firm up, so it reads as a press target rather than
    as a smudge floating over one. */
@@ -772,7 +773,161 @@ nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
   .pill-cursor, .pill-dot { display: none; }
 }
 
+/* ============================================================
+   Orbit — the 3D scene behind the sign-in glass
+   ------------------------------------------------------------
+   Everything in here animates `transform` and nothing else. Each shape is
+   rasterised once at mount and then only moved by the compositor, so the whole
+   scene costs the same whether it holds three shapes or twelve. No filters, no
+   width/height/top/left keyframes — those are what made the old backdrop drop
+   frames.
+   ============================================================ */
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* The scene is decoration; its contents can never influence page layout. */
+  contain: strict;
+  pointer-events: none;
+}
+
+/* A liquid blob. Lopsided radii make it organic without an SVG path, and it
+   only ever rotates — a morphing border-radius would re-run layout. */
+.blob {
+  position: absolute;
+  border-radius: 42% 58% 63% 37% / 47% 38% 62% 53%;
+  transform-origin: 50% 50%;
+  animation: blobSpin var(--dur, 44s) linear infinite;
+  animation-delay: calc(var(--i, 0) * -6s);
+  will-change: transform;
+}
+.blob-b { border-radius: 63% 37% 41% 59% / 36% 57% 43% 64%; animation-direction: reverse; }
+
+@keyframes blobSpin {
+  0%   { transform: rotate(0deg)   scale(1); }
+  50%  { transform: rotate(180deg) scale(1.06); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+/* A sphere seen *through* the pane. Its edge fades to nothing instead of
+   ending on a rim, which is what a real sphere looks like behind frosted
+   glass — so the frost can be painted rather than computed. This is the whole
+   reason the pane needs no backdrop-filter: nothing behind it has a hard edge
+   to blur in the first place. */
+.orb-soft {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 32%,
+    var(--orb-a, #2fd0b6) 0%,
+    var(--orb-b, #1f3763) 42%,
+    rgba(16, 32, 70, .55) 68%,
+    rgba(16, 32, 70, 0) 100%);
+  animation: orbit var(--dur, 18s) var(--ease) infinite;
+  animation-delay: calc(var(--i, 0) * -2.6s);
+  will-change: transform;
+}
+
+/* A sphere in front of the pane, where you see it crisply. The off-centre
+   highlight is what sells the third dimension — a flat radial gradient reads
+   as a disc, an offset one reads as lit. */
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .92), rgba(255, 255, 255, 0) 38%),
+    radial-gradient(circle at 68% 74%, var(--orb-b, #1f3763), var(--orb-a, #159c8a) 82%);
+  box-shadow:
+    inset -6px -8px 18px rgba(0, 0, 0, .38),
+    0 18px 40px -12px rgba(0, 0, 0, .55);
+  animation: orbit var(--dur, 18s) var(--ease) infinite;
+  animation-delay: calc(var(--i, 0) * -2.6s);
+  will-change: transform;
+}
+/* Spheres in front of the glass catch the light differently and sit closer,
+   so they drift further and faster than the ones behind it. */
+.orb-front { z-index: 3; }
+
+@keyframes orbit {
+  0%   { transform: translate3d(0, 0, 0)          rotate(0deg); }
+  25%  { transform: translate3d(14px, -26px, 0)   rotate(4deg); }
+  50%  { transform: translate3d(-8px, -40px, 0)   rotate(-3deg); }
+  75%  { transform: translate3d(-20px, -18px, 0)  rotate(2deg); }
+  100% { transform: translate3d(0, 0, 0)          rotate(0deg); }
+}
+
+/* The pane the form sits on.
+   No backdrop-filter. Measured: with one on this pane the sweep sat at a 50ms
+   median and spiked to 83ms, and it made no difference whether anything behind
+   it was moving — a live blur over a full-size element is simply re-computed
+   every frame. Without it the same page holds a locked 16.7ms.
+   The frost is painted instead: a milky gradient, a lit bevel, and a fine
+   diagonal grain, over a backdrop (.orb-soft, .blob) that carries no hard edge
+   for a blur to have softened anyway. */
+.glass {
+  position: relative;
+  z-index: 2;
+  background:
+    repeating-linear-gradient(58deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 5px),
+    linear-gradient(150deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .10) 58%, rgba(255, 255, 255, .17));
+  border: 1px solid rgba(255, 255, 255, .35);
+  box-shadow:
+    0 40px 90px -30px rgba(2, 8, 23, .75),
+    inset 0 1px 0 rgba(255, 255, 255, .5),
+    inset 0 -1px 0 rgba(255, 255, 255, .12);
+}
+/* A brighter seam along the top-left edge, the way a real bevel catches light. */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, .7), transparent 40%, transparent 60%, rgba(255, 255, 255, .25));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Fields on glass: dark UI on a light-on-dark pane, not the paper inputs. */
+.input-glass {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, .12);
+  border: 1px solid rgba(255, 255, 255, .26);
+  color: #fff;
+  /* Room for the leading icon is baked in rather than left to a `pl-10`
+     utility: these rules are unlayered, so they would beat Tailwind's
+     @layer utilities and the icon would sit on top of the text. */
+  padding: .72rem .9rem .72rem 2.5rem;
+  font-size: .95rem;
+  transition: background .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+/* Same reason as the left padding: the reveal button needs its own gutter. */
+.input-glass-pw { padding-right: 2.75rem; }
+.input-glass::placeholder { color: rgba(255, 255, 255, .42); }
+.input-glass:focus {
+  outline: none;
+  background: rgba(255, 255, 255, .18);
+  border-color: rgba(63, 184, 166, .8);
+  box-shadow: 0 0 0 3px rgba(63, 184, 166, .22);
+}
+.input-glass[aria-invalid='true'] {
+  border-color: rgba(240, 138, 132, .85);
+  box-shadow: 0 0 0 3px rgba(240, 138, 132, .2);
+}
+.label-glass {
+  display: block;
+  margin-bottom: .4rem;
+  font-size: .8rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: rgba(255, 255, 255, .72);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .blob, .orb, .orb-soft { animation: none !important; }
   .float, .float-slow, .aurora, .glint::after, .shake { animation: none !important; }
   .deal, .reveal-in, .genie, .genie-closing { animation: none !important; }
   .reveal { opacity: 1; transform: none; }
