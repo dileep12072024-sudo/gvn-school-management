@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ChevronDown, LogOut, Settings, Menu, PanelLeftClose } from 'lucide-react'
 import { getInitials, getRoleLabel, cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
+import { useExitAnimation } from '@/lib/exit'
 import type { Profile } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -16,6 +17,7 @@ export default function Header({
   onMenuClick?: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const menu = useExitAnimation(open)
   const [signingOut, setSigningOut] = useState(false)
   const router = useRouter()
   const { signOut } = useAuth()
@@ -82,12 +84,12 @@ export default function Header({
           />
         </button>
 
-        {open && (
+        {menu.mounted && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
             <div
               role="menu"
-              className="panel animate-rise absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden p-0"
+              className={cn('panel genie absolute right-0 top-full z-50 mt-2 w-60 overflow-hidden p-0', menu.closing && 'genie-closing')}
               style={{ boxShadow: 'var(--lift-3)' }}
             >
               <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--edge)' }}>

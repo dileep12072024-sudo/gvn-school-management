@@ -4,6 +4,7 @@ import { useEffect, type ElementType } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Tilt3D from './Tilt3D'
+import { useExitAnimation } from '@/lib/exit'
 
 export { default as Tilt3D } from './Tilt3D'
 export { default as Segmented, type SegOption } from './Segmented'
@@ -103,6 +104,8 @@ export function Modal({
   footer?: React.ReactNode
   wide?: boolean
 }) {
+  const sheet = useExitAnimation(open)
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -114,12 +117,12 @@ export function Modal({
     }
   }, [open, onClose])
 
-  if (!open) return null
+  if (!sheet.mounted) return null
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
-      style={{ background: 'rgba(13, 30, 51, .55)' }}
+      className={cn('veil fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4', sheet.closing && 'veil-closing')}
+      style={{ background: 'rgba(18, 33, 63, .55)' }}
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div
@@ -129,13 +132,13 @@ export function Modal({
         className={cn(
           // Phone: a sheet anchored to the bottom, square at the base, thumb in
           // reach of the footer buttons. Desktop: the usual centred card.
-          'panel safe-b flex w-full flex-col overflow-hidden',
+          'panel safe-b genie flex w-full flex-col overflow-hidden',
           'max-h-[92dvh] rounded-b-none sm:max-h-[88dvh] sm:rounded-b-[var(--radius-lg)]',
           wide ? 'sm:max-w-3xl' : 'sm:max-w-lg',
+          sheet.closing && 'genie-closing',
         )}
         style={{
-          animation: 'sheetUp .32s cubic-bezier(.2,.8,.3,1) both',
-          boxShadow: '0 30px 60px -20px rgba(13,30,51,.55), 0 10px 24px rgba(13,30,51,.28)',
+          boxShadow: '0 30px 60px -20px rgba(18,33,63,.55), 0 10px 24px rgba(18,33,63,.28)',
         }}
       >
         {/* Grab handle — the affordance that says "this sheet dismisses". */}

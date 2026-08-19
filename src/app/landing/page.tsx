@@ -28,11 +28,19 @@ export default function LandingPage() {
       {/* ── Cinematic ground ────────────────────────────── */}
       <div
         className="aurora"
-        style={{ background: 'conic-gradient(from 40deg at 30% 20%, rgba(184,135,59,.30), transparent 40%, rgba(47,92,153,.26) 66%, transparent 90%)' }}
+        style={{
+          background:
+            'radial-gradient(40% 42% at 28% 22%, rgba(21,156,138,.24), transparent 70%),' +
+            'radial-gradient(46% 44% at 76% 40%, rgba(51,80,127,.22), transparent 74%)',
+        }}
       />
       <div
         className="aurora aurora-2"
-        style={{ background: 'conic-gradient(from 220deg at 74% 78%, rgba(221,175,87,.24), transparent 44%, rgba(30,58,95,.28) 72%, transparent 94%)' }}
+        style={{
+          background:
+            'radial-gradient(42% 40% at 72% 78%, rgba(63,184,166,.20), transparent 72%),' +
+            'radial-gradient(50% 46% at 22% 68%, rgba(31,55,99,.24), transparent 76%)',
+        }}
       />
 
       <header

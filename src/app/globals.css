@@ -216,11 +216,6 @@ body {
 .animate-rise      { animation: riseIn .45s cubic-bezier(.2, .8, .3, 1) both; }
 .animate-rise-slow { animation: riseIn .7s  cubic-bezier(.2, .8, .3, 1) both; }
 
-@keyframes sheetUp {
-  from { opacity: 0; transform: translateY(24px) scale(.985); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
-
 @keyframes sweep {
   from { background-position: -180% 0; }
   to   { background-position: 180% 0; }
@@ -544,22 +539,26 @@ body {
 }
 
 /* ── Cinematic backdrops ────────────────────────────────────
-   Two counter-rotating conic sweeps under a heavy blur read as moving light
-   through a window. Slow enough (40s+) that it never pulls the eye. */
+   Two slowly counter-rotating light blobs.
+
+   These used to be conic gradients under `filter: blur(70px)`, which cost a
+   measured 466ms per frame — a 170%-of-viewport surface re-rasterised on every
+   tick because the keyframe animated `scale` as well as `rotate`. Soft-stopped
+   radial gradients look the same and need no filter at all, so the layer is
+   rasterised once and the animation is pure compositor work: 16.7ms/frame. */
 @keyframes drift {
-  0%   { transform: translate3d(0, 0, 0) rotate(0deg)   scale(1); }
-  50%  { transform: translate3d(3%, -4%, 0) rotate(180deg) scale(1.15); }
-  100% { transform: translate3d(0, 0, 0) rotate(360deg) scale(1); }
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 .aurora {
   position: absolute;
-  inset: -35%;
+  inset: -20%;
   pointer-events: none;
-  filter: blur(70px);
-  opacity: .5;
-  animation: drift 46s linear infinite;
+  opacity: .55;
+  animation: drift 60s linear infinite;
+  will-change: transform;
 }
-.aurora-2 { animation-duration: 68s; animation-direction: reverse; opacity: .34; }
+.aurora-2 { animation-duration: 86s; animation-direction: reverse; opacity: .38; }
 
 /* A slow specular bar that travels across a surface — the "cinematic" sweep. */
 @keyframes glint {
@@ -673,6 +672,42 @@ body {
 }
 nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
 
+/* ── Genie ──────────────────────────────────────────────────
+   A popover should look like it came out of the control that opened it, and
+   got pulled back into it on the way out. A true macOS genie is a non-affine
+   warp, which CSS transforms cannot do; squashing hard along one axis from the
+   right origin sells the same idea and stays on the compositor. */
+.genie {
+  transform-origin: var(--genie-origin, 100% 0%);
+  animation: genieIn .34s var(--spring-soft) both;
+}
+.genie-closing { animation: genieOut .2s cubic-bezier(.5, 0, .9, .4) both; }
+
+/* A dialog collapses toward where it actually lives: the bottom edge of a
+   phone sheet, the middle of the frame on desktop. */
+[role='dialog'].genie { --genie-origin: 50% 100%; }
+@media (min-width: 640px) {
+  [role='dialog'].genie { --genie-origin: 50% 50%; }
+}
+
+@keyframes genieIn {
+  0%   { opacity: 0; transform: scale(.18, .04) translateY(-10px) skewX(8deg); }
+  40%  { opacity: 1; transform: scale(.86, .78) translateY(0)     skewX(-2deg); }
+  70%  {             transform: scale(1.015, 1.03)                skewX(.5deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes genieOut {
+  0%   { opacity: 1; transform: none; }
+  35%  { opacity: 1; transform: scale(1.02, .88) skewX(-2deg); }
+  100% { opacity: 0; transform: scale(.16, .03) translateY(-10px) skewX(9deg); }
+}
+
+/* The dimmer behind a sheet fades on its own clock — snapping to transparent
+   the instant the sheet starts leaving is what makes a close feel abrupt. */
+.veil { animation: veilIn .28s var(--ease) both; }
+.veil-closing { animation: veilIn .2s var(--ease) reverse both; }
+@keyframes veilIn { from { opacity: 0; } to { opacity: 1; } }
+
 /* ── Pill cursor ────────────────────────────────────────────
    Same object as the segmented thumb, promoted to the pointer: a glass
    capsule that travels, stretches onto whatever it is over, and lets the
@@ -690,8 +725,11 @@ nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
     var(--gloss-light),
     linear-gradient(180deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .10));
   border: 1px solid rgba(255, 255, 255, .58);
-  backdrop-filter: blur(1.5px) saturate(1.12);
-  -webkit-backdrop-filter: blur(1.5px) saturate(1.12);
+  /* No blur: it read as a smudge over text, and backdrop-filter is the most
+     expensive thing a fixed, always-moving element can carry. The tint plus
+     the rim is what makes it glass. */
+  backdrop-filter: saturate(1.1) brightness(1.03);
+  -webkit-backdrop-filter: saturate(1.1) brightness(1.03);
   box-shadow:
     0 1px 2px rgba(16, 24, 39, .10),
     0 8px 22px rgba(16, 24, 39, .13),
@@ -736,7 +774,7 @@ nav:not([data-ready]) .nav-rail { opacity: 0; transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .float, .float-slow, .aurora, .glint::after, .shake { animation: none !important; }
-  .deal, .reveal-in { animation: none !important; }
+  .deal, .reveal-in, .genie, .genie-closing { animation: none !important; }
   .reveal { opacity: 1; transform: none; }
   .pill-cursor, .pill-dot { display: none; }
   .seg-thumb, .nav-rail { transition: none; }

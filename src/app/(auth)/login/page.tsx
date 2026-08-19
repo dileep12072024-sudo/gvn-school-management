@@ -50,21 +50,6 @@ function LoginForm() {
 
   const years = useCountUp(30)
 
-  // Parallax: the aurora layers lag the pointer, so the card sits in front of
-  // a backdrop that moves independently of it.
-  useEffect(() => {
-    if (!window.matchMedia('(hover: hover)').matches) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const onMove = (e: PointerEvent) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 2
-      const y = (e.clientY / window.innerHeight - 0.5) * 2
-      document.documentElement.style.setProperty('--px', `${(x * 18).toFixed(1)}px`)
-      document.documentElement.style.setProperty('--py', `${(y * 18).toFixed(1)}px`)
-    }
-    window.addEventListener('pointermove', onMove, { passive: true })
-    return () => window.removeEventListener('pointermove', onMove)
-  }, [])
-
   const set = (k: string, v: string) => {
     setForm(p => ({ ...p, [k]: v }))
     if (errors[k]) setErrors(p => { const n = { ...p }; delete n[k]; return n })
@@ -118,14 +103,17 @@ function LoginForm() {
       <div
         className="aurora"
         style={{
-          background: 'conic-gradient(from 0deg at 32% 38%, rgba(184,135,59,.55), transparent 38%, rgba(47,92,153,.6) 62%, transparent 88%)',
-          transform: 'translate3d(var(--px, 0px), var(--py, 0px), 0)',
+          background:
+            'radial-gradient(38% 42% at 30% 34%, rgba(21,156,138,.46), transparent 70%),' +
+            'radial-gradient(46% 40% at 74% 60%, rgba(51,80,127,.62), transparent 72%)',
         }}
       />
       <div
         className="aurora aurora-2"
         style={{
-          background: 'conic-gradient(from 180deg at 68% 64%, rgba(221,175,87,.42), transparent 42%, rgba(30,58,95,.7) 70%, transparent 92%)',
+          background:
+            'radial-gradient(40% 38% at 70% 26%, rgba(63,184,166,.30), transparent 72%),' +
+            'radial-gradient(52% 46% at 24% 76%, rgba(31,55,99,.62), transparent 76%)',
         }}
       />
 
