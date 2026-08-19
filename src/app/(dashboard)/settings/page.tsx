@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
-  const [pw, setPw] = useState({ next: '', confirm: '' })
+  const [pw, setPw] = useState({ current: '', next: '', confirm: '' })
   const [pwErrors, setPwErrors] = useState<Record<string, string>>({})
   const [changing, setChanging] = useState(false)
 
@@ -78,17 +78,34 @@ export default function SettingsPage() {
 
   async function changePassword() {
     const errs: Record<string, string> = {}
+    if (!pw.current) errs.current = 'Enter your current password'
     if (pw.next.length < 8) errs.next = 'Use at least 8 characters'
     if (pw.next !== pw.confirm) errs.confirm = 'Passwords do not match'
+    if (pw.current && pw.next && pw.current === pw.next) errs.next = 'Choose a password you have not used here before'
     if (Object.keys(errs).length) { setPwErrors(errs); return }
 
     setChanging(true)
+    // Reauthenticate before changing the password. Supabase lets an *active
+    // session* set a new password with no proof of the old one, so a laptop
+    // left unlocked is a silent account takeover. Signing in again with the
+    // stated current password is the check; it also refreshes the session,
+    // and it fails harmlessly if the password is wrong.
+    const { error: reauth } = await supabase.auth.signInWithPassword({
+      email: profile!.email,
+      password: pw.current,
+    })
+    if (reauth) {
+      setChanging(false)
+      setPwErrors({ current: 'That is not your current password' })
+      return
+    }
+
     const { error } = await supabase.auth.updateUser({ password: pw.next })
     setChanging(false)
 
     if (error) { toast.error(error.message); return }
     toast.success('Password changed')
-    setPw({ next: '', confirm: '' })
+    setPw({ current: '', next: '', confirm: '' })
     setPwErrors({})
   }
 
@@ -132,6 +149,15 @@ export default function SettingsPage() {
 
       <Section icon={Shield} title="Password">
         <div className="space-y-4">
+          <div>
+            <label htmlFor="current_pw" className="label">Current password</label>
+            <input
+              id="current_pw" type="password" autoComplete="current-password" value={pw.current}
+              onChange={e => { setPw(p => ({ ...p, current: e.target.value })); setPwErrors({}) }}
+              className={`input max-w-sm ${pwErrors.current ? 'input-error' : ''}`}
+            />
+            {pwErrors.current && <p className="field-error">{pwErrors.current}</p>}
+          </div>
           <div>
             <label htmlFor="new_pw" className="label">New password</label>
             <input

@@ -191,6 +191,9 @@ export default function CalendarPage() {
                   {dayEvents.slice(0, 2).map(e => (
                     <div
                       key={e.id}
+                      // A month cell genuinely has no room, so this one stays
+                      // clipped — but the full title is reachable on hover.
+                      title={e.title}
                       className="truncate rounded px-1 py-0.5 text-[10px] font-semibold text-white"
                       style={{ background: TYPES[e.event_type as keyof typeof TYPES]?.color ?? TYPES.other.color }}
                     >
@@ -226,9 +229,9 @@ export default function CalendarPage() {
                 <div key={e.id} className="plaque flex items-center gap-3 p-3">
                   <span className="h-8 w-1 shrink-0 rounded-full" style={{ background: tone.color }} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{e.title}</p>
+                    <p className="truncate text-sm font-semibold" title={e.title} style={{ color: 'var(--ink)' }}>{e.title}</p>
                     {e.description && (
-                      <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>{e.description}</p>
+                      <p className="line-clamp-2 text-xs" style={{ color: 'var(--ink-faint)' }}>{e.description}</p>
                     )}
                   </div>
                   <span className="shrink-0 whitespace-nowrap text-xs" style={{ color: 'var(--ink-faint)' }}>

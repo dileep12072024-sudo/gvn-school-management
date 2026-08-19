@@ -1,0 +1,18 @@
+# Cloudflare Pages serves these on every response.
+#
+# The Supabase auth cookie cannot be HttpOnly: @supabase/ssr's browser client
+# reads it from document.cookie to attach the bearer token, so marking it
+# HttpOnly would simply log everyone out. That makes XSS the thing standing
+# between an attacker and a session, so the defences below are the mitigation
+# rather than a nice-to-have.
+/*
+  # Nothing here is ever framed — kills clickjacking regardless of CSP support.
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  # Stop the browser guessing a content type and executing an upload as script.
+  X-Content-Type-Options: nosniff
+  # Don't leak student ids or admission numbers in the Referer of outbound links.
+  Referrer-Policy: strict-origin-when-cross-origin
+  # This app asks for none of these.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains

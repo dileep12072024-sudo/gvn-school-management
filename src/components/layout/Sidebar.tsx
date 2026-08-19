@@ -91,7 +91,10 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
           <button
             onClick={onClose}
             aria-label="Close sidebar"
-            className="shrink-0 rounded-[var(--radius-sm)] p-1.5 text-white/50 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+            // grid+place-items rather than p-1.5: this is a touch-only control
+            // (lg:hidden), so it should carry the full tap target, not 28px.
+            className="grid shrink-0 place-items-center rounded-[var(--radius-sm)] text-white/50 transition-colors hover:bg-white/10 hover:text-white lg:hidden"
+            style={{ width: 'var(--tap)', height: 'var(--tap)' }}
           >
             <X className="h-4 w-4" />
           </button>

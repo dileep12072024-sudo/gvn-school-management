@@ -262,7 +262,7 @@ export default function DashboardPage() {
             <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
               <Megaphone className="h-4 w-4" style={{ color: 'var(--accent)' }} /> Recent notices
             </h3>
-            <Link href="/notices" className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>
+            <Link href="/notices" className="link-tap flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>
               View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>{n.title}</p>
+                      <p className="truncate text-sm font-semibold" title={n.title} style={{ color: 'var(--ink)' }}>{n.title}</p>
                       <span
                         className="badge shrink-0"
                         style={{ background: 'var(--paper-deep)', color: priorityTone[n.priority] ?? CHART.slate }}
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                         {n.priority}
                       </span>
                     </div>
-                    <p className="mt-0.5 truncate text-xs" style={{ color: 'var(--ink-faint)' }}>{n.content}</p>
+                    <p className="mt-0.5 line-clamp-2 text-xs" style={{ color: 'var(--ink-faint)' }}>{n.content}</p>
                   </div>
                   <span className="shrink-0 whitespace-nowrap text-xs" style={{ color: 'var(--ink-faint)' }}>
                     {formatDate(n.created_at, 'dd MMM')}
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
               <CalendarDays className="h-4 w-4" style={{ color: 'var(--accent)' }} /> Coming up
             </h3>
-            <Link href="/calendar" className="text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>Calendar</Link>
+            <Link href="/calendar" className="link-tap text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>Calendar</Link>
           </div>
 
           {loading ? (

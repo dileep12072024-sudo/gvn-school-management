@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import {
-  Plus, Search, CreditCard, AlertCircle, CheckCircle, Wallet, Receipt, Trash2,
+  Plus, Search, SearchX, CreditCard, AlertCircle, CheckCircle, Wallet, Receipt, Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
@@ -231,7 +231,19 @@ export default function FeesPage() {
         {loading ? (
           <SkeletonRows cols={8} />
         ) : rows.length === 0 ? (
-          <EmptyState icon={CreditCard} title="No fee records" hint="Raise a fee to start tracking collections." colSpan={8} />
+          // A filtered-to-nothing table is not an empty table. Telling someone
+          // to "raise a fee to start tracking" when 55 records are sitting
+          // behind their search reads as data loss.
+          debounced || statusFilter !== 'all' ? (
+            <EmptyState
+              icon={SearchX}
+              title="No fees match your filters"
+              hint={debounced ? `Nothing found for “${debounced}”. Clear the search to see all records.` : 'Clear the status filter to see all records.'}
+              colSpan={8}
+            />
+          ) : (
+            <EmptyState icon={CreditCard} title="No fee records" hint="Raise a fee to start tracking collections." colSpan={8} />
+          )
         ) : rows.map(f => {
           const style = STATUS_STYLE[f.status] ?? STATUS_STYLE.pending
           return (

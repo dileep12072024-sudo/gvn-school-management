@@ -182,7 +182,7 @@ export default function TransportPage() {
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-lg font-bold" style={{ color: 'var(--primary)' }}>{r.route_number}</p>
-                    <p className="truncate font-semibold" style={{ color: 'var(--ink)' }}>{r.route_name}</p>
+                    <p className="truncate font-semibold" title={r.route_name} style={{ color: 'var(--ink)' }}>{r.route_name}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
                     <span className="badge" style={{ background: 'var(--tint-navy)', color: 'var(--primary)' }}>

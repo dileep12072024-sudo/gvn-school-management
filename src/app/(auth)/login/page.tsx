@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { GraduationCap, Eye, EyeOff, Lock, Mail, ShieldCheck, ArrowRight, CalendarCheck, IndianRupee, Bus } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase'
@@ -109,9 +109,7 @@ function LoginForm() {
   const [shake, setShake] = useState(false)
 
   const router = useRouter()
-  const params = useSearchParams()
   const supabase = useMemo(() => createClient(), [])
-  const next = params.get('next')
 
   const years = useCountUp(30)
 
@@ -153,9 +151,17 @@ function LoginForm() {
 
     haptic('success')
     toast.success('Welcome back')
+    // Read ?next straight off the URL rather than through useSearchParams.
+    // That hook forces the whole subtree out of prerendering, so the server
+    // was shipping the Suspense fallback — an empty shell — and the form did
+    // not exist until ~750KB of JS had downloaded and hydrated. Reading it
+    // here costs nothing and lets the page render as static HTML.
+    // A leading slash only, so ?next=//evil.com cannot bounce the user off-site.
+    const next = new URLSearchParams(window.location.search).get('next')
+    const dest = next && next.startsWith('/') && !next.startsWith('//') ? next : '/'
     // '/' resolves the right home server-side via landingFor(), so a parent
     // lands on their child's page rather than on a staff dashboard.
-    router.replace(next && next.startsWith('/') ? next : '/')
+    router.replace(dest)
     router.refresh()
   }
 
@@ -354,9 +360,5 @@ function LoginForm() {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={null}>
-      <LoginForm />
-    </Suspense>
-  )
+  return <LoginForm />
 }

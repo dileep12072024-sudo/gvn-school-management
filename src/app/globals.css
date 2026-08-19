@@ -336,7 +336,10 @@ body {
     min-height: 34px;
     padding-block: .3rem;
   }
-  .btn-icon { @apply px-0; width: var(--tap); }
+  /* flex:none matters — these sit in flex action rows, and without it the
+     button is allowed to shrink below the width set here (measured 29px on a
+     40px target in the fees table). */
+  .btn-icon { @apply px-0; width: var(--tap); flex: none; }
 
   /* ── Inputs: a milled well ─────────────────────── */
   .input {
@@ -450,6 +453,14 @@ body {
 /* Coarse pointers get the 44px target Apple and Google both ask for. */
 @media (pointer: coarse) {
   :root { --tap: 44px; }
+  /* .btn-sm pins its own 34px height, which would quietly undercut the
+     target above on exactly the controls most likely to be mis-tapped —
+     row actions like delete. On a finger, small buttons stop being small. */
+  .btn-sm { min-height: var(--tap); }
+  /* Bare text links used as actions ("View all", "Calendar") are ~16px tall
+     on their own. Padding them out costs nothing on a phone and makes them
+     hittable. */
+  .link-tap { display: inline-flex; align-items: center; min-height: var(--tap); }
 }
 
 /* Respect the notch / home indicator. */
