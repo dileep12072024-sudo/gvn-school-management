@@ -103,14 +103,16 @@ function LoginForm() {
 
     haptic('success')
     toast.success('Welcome back')
-    router.replace(next && next.startsWith('/') ? next : '/dashboard')
+    // '/' resolves the right home server-side via landingFor(), so a parent
+    // lands on their child's page rather than on a staff dashboard.
+    router.replace(next && next.startsWith('/') ? next : '/')
     router.refresh()
   }
 
   return (
     <div
       className="relative flex min-h-[100dvh] items-center justify-center overflow-hidden p-4"
-      style={{ background: 'linear-gradient(160deg, #0b1a2c 0%, #16304e 45%, #0d1e33 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #0c1730 0%, #22406f 45%, #12213f 100%)' }}
     >
       {/* ── Cinematic backdrop ─────────────────────────── */}
       <div
@@ -155,7 +157,7 @@ function LoginForm() {
         <div
           ref={card}
           className="relative hidden flex-col justify-between p-10 text-white lg:flex"
-          style={{ background: 'linear-gradient(165deg, #16304e 0%, #0f2138 60%, #0a1828 100%)' }}
+          style={{ background: 'linear-gradient(165deg, #22406f 0%, #16274a 60%, #0a132a 100%)' }}
         >
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-px"
@@ -166,8 +168,8 @@ function LoginForm() {
             <div
               className="plate float grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)]"
               style={{
-                background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 55%, var(--brass-deep))',
-                boxShadow: '0 3px 0 var(--brass-deep), 0 8px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.4)',
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 55%, var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), 0 8px 18px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.4)',
               }}
             >
               <GraduationCap className="h-7 w-7 text-white" />
@@ -184,7 +186,7 @@ function LoginForm() {
               style={{
                 '--i': 2,
                 background: 'rgba(221,175,87,.16)',
-                color: 'var(--brass-lift)',
+                color: 'var(--accent-lift)',
                 border: '1px solid rgba(221,175,87,.3)',
               } as React.CSSProperties}
             >
@@ -197,7 +199,7 @@ function LoginForm() {
                 className="glint deal inline-block"
                 style={{
                   '--i': 5,
-                  background: 'linear-gradient(180deg, #f7e6bd, var(--brass-lift) 45%, var(--brass-deep))',
+                  background: 'linear-gradient(180deg, #c9f2ea, var(--accent-lift) 45%, var(--accent-deep))',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -206,7 +208,7 @@ function LoginForm() {
                 System
               </span>
             </h1>
-            <div className="mt-4 h-px w-24" style={{ background: 'linear-gradient(90deg, var(--brass), transparent)' }} />
+            <div className="mt-4 h-px w-24" style={{ background: 'linear-gradient(90deg, var(--accent), transparent)' }} />
             <p className="mt-5 text-sm text-white/45">
               Serving Visakhapatnam for{' '}
               <span className="font-bold tabular-nums text-white/80">{years}</span> years
@@ -226,7 +228,7 @@ function LoginForm() {
               >
                 <p.icon
                   className="icon-pop h-4 w-4 shrink-0"
-                  style={{ color: 'var(--brass-lift)' }}
+                  style={{ color: 'var(--accent-lift)' }}
                 />
                 <div>
                   <p className="text-sm font-semibold">{p.label}</p>
@@ -243,14 +245,14 @@ function LoginForm() {
             <div
               className="plate float grid h-11 w-11 place-items-center rounded-[var(--radius-sm)]"
               style={{
-                background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))',
-                boxShadow: '0 3px 0 var(--brass-deep), 0 6px 14px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.4)',
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), 0 6px 14px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.4)',
               }}
             >
               <GraduationCap className="h-6 w-6 text-white" />
             </div>
             <div>
-              <p className="font-bold" style={{ color: 'var(--navy)' }}>GVN School</p>
+              <p className="font-bold" style={{ color: 'var(--primary)' }}>GVN School</p>
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>Management System</p>
             </div>
           </div>
@@ -321,7 +323,7 @@ function LoginForm() {
               boxShadow: 'var(--sunk)',
             } as React.CSSProperties}
           >
-            <ShieldCheck className="icon-pop mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--brass)' }} />
+            <ShieldCheck className="icon-pop mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} />
             <p className="text-xs leading-relaxed" style={{ color: 'var(--ink-faint)' }}>
               Accounts are created by the school administrator. Contact the office
               if you cannot sign in — self-registration is disabled.

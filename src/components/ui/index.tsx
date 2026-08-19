@@ -27,8 +27,8 @@ export function PageHeader({
         <div
           className="plate grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
           style={{
-            background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-            boxShadow: '0 3px 0 var(--navy-deep), 0 6px 14px rgba(15,33,56,.3), inset 0 1px 0 rgba(255,255,255,.25)',
+            background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+            boxShadow: '0 3px 0 var(--primary-deep), 0 6px 14px rgba(15,33,56,.3), inset 0 1px 0 rgba(255,255,255,.25)',
           }}
         >
           <Icon className="h-5 w-5" />
@@ -46,17 +46,17 @@ export function PageHeader({
 /* ── Stat tile ───────────────────────────────────────────── */
 
 const TONES = {
-  navy:   'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-  brass:  'linear-gradient(180deg, var(--brass-lift), var(--brass) 60%, var(--brass-deep))',
-  green:  'linear-gradient(180deg, #4a9d78, #2f7d5b 60%, #1f5c42)',
-  red:    'linear-gradient(180deg, #d15b52, #b8443c 60%, #94322b)',
-  slate:  'linear-gradient(180deg, #8494a8, #667790 60%, #4b5a70)',
+  primary: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+  accent:  'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+  green:   'linear-gradient(180deg, #2c9c78, var(--success) 60%, var(--success-deep))',
+  red:     'linear-gradient(180deg, #d4645e, var(--danger) 60%, var(--danger-deep))',
+  slate:   'linear-gradient(180deg, #94a2b5, var(--slate) 60%, var(--slate-deep))',
 } as const
 
 export type Tone = keyof typeof TONES
 
 export function StatCard({
-  label, value, icon: Icon, tone = 'navy', hint,
+  label, value, icon: Icon, tone = 'primary', hint,
 }: {
   label: string
   value: React.ReactNode
@@ -146,7 +146,7 @@ export function Modal({
         <div
           className="flex items-start justify-between gap-4 px-5 py-4 text-white sm:px-6 sm:py-5"
           style={{
-            background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 70%, var(--navy-deep))',
+            background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 70%, var(--primary-deep))',
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,.18), 0 2px 6px rgba(15,33,56,.3)',
           }}
         >

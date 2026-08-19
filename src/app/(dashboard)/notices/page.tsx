@@ -25,10 +25,10 @@ const RULES = {
 }
 
 const PRIORITY: Record<string, { bg: string; fg: string; rule: string }> = {
-  urgent: { bg: '#f6dedc', fg: '#94322b', rule: '#b8443c' },
-  high:   { bg: '#f5e6cd', fg: '#8a6224', rule: '#b8873b' },
-  medium: { bg: '#e5ecf4', fg: '#1e3a5f', rule: '#2e5a96' },
-  low:    { bg: '#e8e3d8', fg: '#667790', rule: '#8494a8' },
+  urgent: { bg: 'var(--tint-danger)', fg: 'var(--danger-deep)', rule: 'var(--danger)' },
+  high:   { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)', rule: 'var(--accent)' },
+  medium: { bg: 'var(--tint-primary)', fg: 'var(--primary)', rule: 'var(--azure)' },
+  low:    { bg: 'var(--paper-deep)', fg: 'var(--slate-deep)', rule: 'var(--slate)' },
 }
 
 export default function NoticesPage() {
@@ -119,7 +119,7 @@ export default function NoticesPage() {
         title="Notices"
         subtitle="School announcements and circulars"
         actions={canPost && (
-          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }} className="btn btn-brass">
+          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Post notice
           </button>
         )}
@@ -163,7 +163,7 @@ export default function NoticesPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="mb-1.5 flex flex-wrap items-center gap-2">
-                      {n.pinned && <Pin className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--brass)' }} />}
+                      {n.pinned && <Pin className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--accent)' }} />}
                       <h3 className="font-bold" style={{ color: 'var(--ink)' }}>{n.title}</h3>
                       <span className="badge" style={{ background: tone.bg, color: tone.fg }}>{n.priority}</span>
                       {expired && (
@@ -189,12 +189,12 @@ export default function NoticesPage() {
                         aria-label={n.pinned ? 'Unpin notice' : 'Pin notice'}
                         aria-pressed={n.pinned}
                         className="btn btn-ghost btn-icon"
-                        style={n.pinned ? { color: 'var(--brass)' } : undefined}
+                        style={n.pinned ? { color: 'var(--accent)' } : undefined}
                       >
                         <Pin className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => setDeleting(n)} className="btn btn-ghost btn-icon" aria-label="Delete notice">
-                        <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                        <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                       </button>
                     </div>
                   )}
@@ -269,9 +269,9 @@ export default function NoticesPage() {
                     aria-pressed={on}
                     className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all"
                     style={on ? {
-                      background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))',
+                      background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))',
                       color: '#fff',
-                      boxShadow: '0 2px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.2)',
+                      boxShadow: '0 2px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.2)',
                     } : {
                       background: 'var(--surface-sunk)',
                       color: 'var(--ink-faint)',

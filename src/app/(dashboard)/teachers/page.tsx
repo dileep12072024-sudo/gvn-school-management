@@ -122,13 +122,13 @@ export default function TeachersPage() {
         icon={GraduationCap}
         title="Teachers"
         subtitle={`${rows.length} staff record${rows.length === 1 ? '' : 's'}`}
-        actions={<button onClick={openAdd} className="btn btn-brass"><Plus className="h-4 w-4" /> Add teacher</button>}
+        actions={<button onClick={openAdd} className="btn btn-accent"><Plus className="h-4 w-4" /> Add teacher</button>}
       />
 
       <div className="stat-grid">
-        <StatCard label="Total staff" value={rows.length} icon={Users} tone="navy" />
+        <StatCard label="Total staff" value={rows.length} icon={Users} tone="primary" />
         <StatCard label="Active" value={active} icon={GraduationCap} tone="green" />
-        <StatCard label="Subjects covered" value={subjects} icon={BookOpen} tone="brass" />
+        <StatCard label="Subjects covered" value={subjects} icon={BookOpen} tone="accent" />
       </div>
 
       <Toolbar>
@@ -154,7 +154,7 @@ export default function TeachersPage() {
           <EmptyState icon={GraduationCap} title="No teachers found" hint={search ? 'Try a different search.' : 'Add the first staff member.'} colSpan={8} />
         ) : filtered.map(t => (
           <tr key={t.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
-            <td className="table-cell font-mono text-xs font-bold" style={{ color: 'var(--navy)' }}>{t.employee_id}</td>
+            <td className="table-cell font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>{t.employee_id}</td>
             <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>
               {t.full_name}
               <span className="block text-[11px] font-normal" style={{ color: 'var(--ink-faint)' }}>{t.email}</span>
@@ -165,7 +165,7 @@ export default function TeachersPage() {
                 {(t.subject_specialization ?? []).length === 0
                   ? <span style={{ color: 'var(--ink-faint)' }}>—</span>
                   : t.subject_specialization.map((s: string) => (
-                      <span key={s} className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}>{s}</span>
+                      <span key={s} className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>{s}</span>
                     ))}
               </div>
             </td>
@@ -175,8 +175,8 @@ export default function TeachersPage() {
               <span
                 className="badge"
                 style={t.status === 'active'
-                  ? { background: '#dcece3', color: '#1f5c42' }
-                  : { background: '#e8e3d8', color: '#667790' }}
+                  ? { background: 'var(--tint-success)', color: 'var(--success-deep)' }
+                  : { background: 'var(--paper-deep)', color: 'var(--slate-deep)' }}
               >
                 {t.status}
               </span>
@@ -187,7 +187,7 @@ export default function TeachersPage() {
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
                 <button onClick={() => setDeleting(t)} className="btn btn-ghost btn-icon" aria-label={`Delete ${t.full_name}`}>
-                  <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                  <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                 </button>
               </div>
             </td>

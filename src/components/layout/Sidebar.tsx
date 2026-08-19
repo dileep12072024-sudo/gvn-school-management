@@ -65,7 +65,7 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
     <aside
       className="flex h-full w-64 shrink-0 flex-col"
       style={{
-        background: 'linear-gradient(180deg, #16304e 0%, #0f2138 55%, #0a1828 100%)',
+        background: 'linear-gradient(180deg, #22406f 0%, #16274a 55%, #0a132a 100%)',
         boxShadow: 'inset -1px 0 0 rgba(255,255,255,.06), 4px 0 24px rgba(10,24,40,.28)',
       }}
     >
@@ -77,8 +77,8 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
         <div
           className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)]"
           style={{
-            background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 55%, var(--brass-deep))',
-            boxShadow: '0 2px 0 var(--brass-deep), 0 4px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.4)',
+            background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 55%, var(--accent-deep))',
+            boxShadow: '0 2px 0 var(--accent-deep), 0 4px 10px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.4)',
           }}
         >
           <GraduationCap className="h-5 w-5 text-white" />
@@ -128,7 +128,7 @@ export default function Sidebar({ role, onClose }: { role: UserRole; onClose?: (
                     >
                       <Icon
                         className={cn('h-4 w-4 shrink-0 transition-colors', !active && 'text-white/35 group-hover:text-white/70')}
-                        style={active ? { color: 'var(--brass-lift)' } : undefined}
+                        style={active ? { color: 'var(--accent-lift)' } : undefined}
                       />
                       <span className="truncate">{item.label}</span>
                     </Link>

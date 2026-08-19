@@ -44,14 +44,14 @@ export default function LandingPage() {
             <div
               className="plate grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white"
               style={{
-                background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 60%, var(--brass-deep))',
-                boxShadow: '0 3px 0 var(--brass-deep), inset 0 1px 0 rgba(255,255,255,.3)',
+                background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+                boxShadow: '0 3px 0 var(--accent-deep), inset 0 1px 0 rgba(255,255,255,.3)',
               }}
             >
               <GraduationCap className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold leading-tight sm:text-base" style={{ color: 'var(--navy)', fontFamily: 'var(--font-serif), serif' }}>
+              <p className="truncate text-sm font-bold leading-tight sm:text-base" style={{ color: 'var(--primary)', fontFamily: 'var(--font-serif), serif' }}>
                 Geethanjali Vidya Nilayam
               </p>
               <p className="truncate text-xs" style={{ color: 'var(--ink-faint)' }}>Peddawaltair, Visakhapatnam</p>
@@ -72,7 +72,7 @@ export default function LandingPage() {
         <section className="py-16 text-center sm:py-24">
           <p
             className="deal mx-auto mb-5 inline-block rounded-full px-3.5 py-1.5 text-xs font-semibold tracking-wide"
-            style={{ '--i': 0, background: 'var(--surface-sunk)', color: 'var(--brass-deep)', boxShadow: 'var(--sunk)' } as React.CSSProperties}
+            style={{ '--i': 0, background: 'var(--surface-sunk)', color: 'var(--accent-deep)', boxShadow: 'var(--sunk)' } as React.CSSProperties}
           >
             Andhra Pradesh State Board · Academic year 2024–25
           </p>
@@ -130,8 +130,8 @@ export default function LandingPage() {
                     className="plate float layer-1 mb-4 grid h-11 w-11 place-items-center rounded-[var(--radius)] text-white"
                     style={{
                       '--bob-i': i,
-                      background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-                      boxShadow: '0 3px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.25)',
+                      background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+                      boxShadow: '0 3px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.25)',
                     } as React.CSSProperties}
                   >
                     <m.icon className="h-5 w-5" />
@@ -154,8 +154,8 @@ export default function LandingPage() {
                 <div
                   className="plate float grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius)] text-white"
                   style={{
-                    background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 60%, var(--brass-deep))',
-                    boxShadow: '0 3px 0 var(--brass-deep), inset 0 1px 0 rgba(255,255,255,.3)',
+                    background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+                    boxShadow: '0 3px 0 var(--accent-deep), inset 0 1px 0 rgba(255,255,255,.3)',
                   }}
                 >
                   <ShieldCheck className="h-5 w-5" />
@@ -168,7 +168,7 @@ export default function LandingPage() {
                     If you need access or a password reset, contact the school office.
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2">
-                    {['Organiser', 'Principal', 'Vice principal', 'Teacher', 'Parent', 'Student'].map((r, i) => (
+                    {['Organiser', 'Principal', 'Vice principal', 'Teacher', 'Parent'].map((r, i) => (
                       <span
                         key={r}
                         className="deal rounded-full px-3 py-1.5 text-xs font-semibold"
@@ -196,7 +196,7 @@ export default function LandingPage() {
             ].map((x, i) => (
               <Reveal key={x.k} index={i}>
                 <div className="plaque h-full p-6">
-                  <x.icon className="icon-pop float mb-3 h-5 w-5" style={{ '--bob-i': i, color: 'var(--brass)' } as React.CSSProperties} />
+                  <x.icon className="icon-pop float mb-3 h-5 w-5" style={{ '--bob-i': i, color: 'var(--accent)' } as React.CSSProperties} />
                   <p className="font-bold" style={{ color: 'var(--ink)' }}>{x.k}</p>
                   <p className="mt-1 text-sm" style={{ color: 'var(--ink-soft)' }}>{x.v}</p>
                 </div>

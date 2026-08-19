@@ -94,7 +94,7 @@ export default function MessagesPage() {
         title="Messages"
         subtitle="Direct communication between staff and parents"
         actions={
-          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowCompose(true) }} className="btn btn-brass">
+          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowCompose(true) }} className="btn btn-accent">
             <Send className="h-4 w-4" /> Compose
           </button>
         }
@@ -117,7 +117,7 @@ export default function MessagesPage() {
                 {b === 'inbox' ? <InboxIcon className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
                 {b}
                 {b === 'inbox' && unread > 0 && (
-                  <span className="badge ml-1" style={{ background: 'var(--brass)', color: '#fff' }}>{unread}</span>
+                  <span className="badge ml-1" style={{ background: 'var(--accent)', color: '#fff' }}>{unread}</span>
                 )}
               </button>
             ))}
@@ -140,7 +140,7 @@ export default function MessagesPage() {
                   className="block w-full px-4 py-3.5 text-left transition-colors"
                   style={{
                     borderTop: '1px solid var(--edge)',
-                    borderLeft: active ? '3px solid var(--brass)' : '3px solid transparent',
+                    borderLeft: active ? '3px solid var(--accent)' : '3px solid transparent',
                     background: active ? 'var(--paper-deep)' : isNew ? 'rgba(184,135,59,.06)' : 'transparent',
                   }}
                 >
@@ -158,7 +158,7 @@ export default function MessagesPage() {
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{formatDate(m.created_at, 'dd MMM')}</p>
-                      {isNew && <span className="ml-auto mt-1 block h-2 w-2 rounded-full" style={{ background: 'var(--brass)' }} />}
+                      {isNew && <span className="ml-auto mt-1 block h-2 w-2 rounded-full" style={{ background: 'var(--accent)' }} />}
                     </div>
                   </div>
                 </button>

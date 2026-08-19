@@ -129,7 +129,7 @@ function ReportCard() {
               ))}
             </select>
           )}
-          <button onClick={() => window.print()} className="btn btn-brass">
+          <button onClick={() => window.print()} className="btn btn-accent">
             <Printer className="h-4 w-4" /> Print
           </button>
         </div>
@@ -137,18 +137,18 @@ function ReportCard() {
 
       {/* ── The sheet ─────────────────────────────────── */}
       <div className="print-sheet panel mx-auto max-w-3xl p-10" style={{ background: 'var(--surface)' }}>
-        <div className="flex items-start justify-between gap-6 pb-5" style={{ borderBottom: '2px solid var(--navy)' }}>
+        <div className="flex items-start justify-between gap-6 pb-5" style={{ borderBottom: '2px solid var(--primary)' }}>
           <div className="flex items-center gap-3.5">
             <div
               className="grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)] text-white"
-              style={{ background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))' }}
+              style={{ background: 'linear-gradient(180deg, var(--accent-lift), var(--accent-deep))' }}
             >
               <GraduationCap className="h-8 w-8" />
             </div>
             <div>
               <h1
                 className="text-xl font-bold leading-tight"
-                style={{ color: 'var(--navy)', fontFamily: 'var(--font-serif), serif' }}
+                style={{ color: 'var(--primary)', fontFamily: 'var(--font-serif), serif' }}
               >
                 Geethanjali Vidya Nilayam
               </h1>
@@ -158,7 +158,7 @@ function ReportCard() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[.14em]" style={{ color: 'var(--brass)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-[.14em]" style={{ color: 'var(--accent)' }}>
               Report Card
             </p>
             <p className="mt-1 text-sm font-bold" style={{ color: 'var(--ink)' }}>2024–25</p>
@@ -204,22 +204,22 @@ function ReportCard() {
                 <td className="table-cell text-right tabular-nums">{Math.round(r.pct)}%</td>
                 <td
                   className="table-cell text-right font-bold"
-                  style={{ color: isPass(r.marks, r.passing) ? 'var(--ink)' : '#b8443c' }}
+                  style={{ color: isPass(r.marks, r.passing) ? 'var(--ink)' : 'var(--danger)' }}
                 >
                   {r.grade}
                 </td>
               </tr>
             ))}
             {rows.length > 0 && (
-              <tr style={{ borderTop: '2px solid var(--navy)' }}>
+              <tr style={{ borderTop: '2px solid var(--primary)' }}>
                 <td className="table-cell font-bold" colSpan={2} style={{ color: 'var(--ink)' }}>Total</td>
                 <td className="table-cell text-right font-bold tabular-nums" style={{ color: 'var(--ink)' }}>
                   {totalMarks} / {totalMax}
                 </td>
-                <td className="table-cell text-right font-bold tabular-nums" style={{ color: 'var(--navy)' }}>
+                <td className="table-cell text-right font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
                   {overallPct}%
                 </td>
-                <td className="table-cell text-right font-bold" style={{ color: 'var(--navy)' }}>
+                <td className="table-cell text-right font-bold" style={{ color: 'var(--primary)' }}>
                   {totalMax ? gradeFor(totalMarks, totalMax) : '—'}
                 </td>
               </tr>
@@ -236,7 +236,7 @@ function ReportCard() {
           ].map(([k, v]) => (
             <div key={k} className="plaque px-4 py-3">
               <p className="text-[10px] font-bold uppercase tracking-[.1em]" style={{ color: 'var(--ink-faint)' }}>{k}</p>
-              <p className="mt-0.5 text-lg font-bold tabular-nums" style={{ color: 'var(--navy)' }}>{v}</p>
+              <p className="mt-0.5 text-lg font-bold tabular-nums" style={{ color: 'var(--primary)' }}>{v}</p>
             </div>
           ))}
         </div>

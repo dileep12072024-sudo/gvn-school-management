@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#0f2138',
+  themeColor: '#16274a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -35,13 +35,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style: {
               borderRadius: '10px',
               fontSize: '14px',
-              background: '#fffefb',
-              color: '#16202e',
-              border: '1px solid #ded7c9',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              border: '1px solid var(--edge)',
               boxShadow: '0 10px 24px rgba(22,32,46,.12), 0 2px 4px rgba(22,32,46,.07)',
             },
-            success: { iconTheme: { primary: '#2f7d5b', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#b8443c', secondary: '#fff' } },
+            success: { iconTheme: { primary: 'var(--success)', secondary: '#fff' } },
+            error: { iconTheme: { primary: 'var(--danger)', secondary: '#fff' } },
           }}
         />
         <Interactions />

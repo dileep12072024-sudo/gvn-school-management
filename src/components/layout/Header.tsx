@@ -64,8 +64,8 @@ export default function Header({
           <div
             className="grid h-9 w-9 shrink-0 place-items-center rounded-[var(--radius-sm)] text-white"
             style={{
-              background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-              boxShadow: '0 2px 0 var(--navy-deep), 0 3px 8px rgba(15,33,56,.28), inset 0 1px 0 rgba(255,255,255,.25)',
+              background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+              boxShadow: '0 2px 0 var(--primary-deep), 0 3px 8px rgba(15,33,56,.28), inset 0 1px 0 rgba(255,255,255,.25)',
             }}
           >
             <span className="text-xs font-bold">{getInitials(profile.full_name || 'U')}</span>
@@ -99,7 +99,7 @@ export default function Header({
                 </p>
                 <span
                   className="badge mt-2"
-                  style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}
+                  style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}
                 >
                   {getRoleLabel(profile.role)}
                 </span>
@@ -118,7 +118,7 @@ export default function Header({
                   onClick={handleSignOut}
                   disabled={signingOut}
                   className="flex w-full items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2.5 text-sm transition-colors hover:bg-red-50 disabled:opacity-60"
-                  style={{ color: '#b8443c' }}
+                  style={{ color: 'var(--danger)' }}
                 >
                   <LogOut className="h-4 w-4" /> {signingOut ? 'Signing out…' : 'Sign out'}
                 </button>

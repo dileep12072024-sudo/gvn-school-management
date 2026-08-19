@@ -8,17 +8,17 @@ export type UserRole =
   | 'vice_principal'
   | 'teacher'
   | 'parent'
-  | 'student'
 
 export const ALL_ROLES: UserRole[] = [
-  'organiser', 'principal', 'vice_principal', 'teacher', 'parent', 'student',
+  'organiser', 'principal', 'vice_principal', 'teacher', 'parent',
 ]
 
 /** Roles that administer the school rather than consume it. */
 export const ADMIN_ROLES: UserRole[] = ['organiser', 'principal', 'vice_principal']
 export const STAFF_ROLES: UserRole[] = [...ADMIN_ROLES, 'teacher']
-/** Roles that only ever see their own / their child's records. */
-export const PORTAL_ROLES: UserRole[] = ['parent', 'student']
+/** Roles that only ever see their own / their child's records. Students do
+    not sign in for themselves — a parent account carries the child's view. */
+export const PORTAL_ROLES: UserRole[] = ['parent']
 
 export interface NavItem {
   href: string

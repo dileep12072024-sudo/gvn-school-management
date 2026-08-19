@@ -90,7 +90,7 @@ export default function Segmented<T extends string>({
               'seg-option inline-flex items-center gap-1.5 rounded-full font-semibold capitalize',
               size === 'sm' ? 'px-3 py-1 text-xs' : 'px-4 py-1.5 text-sm',
             )}
-            style={{ color: on ? 'var(--navy)' : 'var(--ink-faint)' }}
+            style={{ color: on ? 'var(--primary)' : 'var(--ink-faint)' }}
           >
             {Icon && <Icon className={size === 'sm' ? 'h-3.5 w-3.5' : 'h-4 w-4'} />}
             {o.label}

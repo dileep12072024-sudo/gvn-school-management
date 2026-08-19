@@ -12,10 +12,10 @@ import { PageHeader, Modal, EmptyState, Tilt3D, Segmented } from '@/components/u
 const DOC_TYPES = ['circular', 'syllabus', 'portfolio', 'other'] as const
 
 const TYPE_TONE: Record<string, { bg: string; fg: string }> = {
-  circular:  { bg: '#e5ecf4', fg: '#1e3a5f' },
-  syllabus:  { bg: '#dcece3', fg: '#1f5c42' },
-  portfolio: { bg: '#f5e6cd', fg: '#8a6224' },
-  other:     { bg: '#e8e3d8', fg: '#667790' },
+  circular:  { bg: 'var(--tint-primary)', fg: 'var(--primary)' },
+  syllabus:  { bg: 'var(--tint-success)', fg: 'var(--success-deep)' },
+  portfolio: { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)' },
+  other:     { bg: 'var(--paper-deep)', fg: 'var(--slate-deep)' },
 }
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -104,7 +104,7 @@ export default function DocumentsPage() {
         title="Documents"
         subtitle="Circulars, syllabus and portfolios"
         actions={canManage && (
-          <button onClick={() => { setErrors({}); setShowModal(true) }} className="btn btn-brass">
+          <button onClick={() => { setErrors({}); setShowModal(true) }} className="btn btn-accent">
             <Upload className="h-4 w-4" /> Upload
           </button>
         )}
@@ -136,15 +136,15 @@ export default function DocumentsPage() {
                   <div
                     className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius)] text-white"
                     style={{
-                      background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-                      boxShadow: '0 3px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.25)',
+                      background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+                      boxShadow: '0 3px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.25)',
                     }}
                   >
                     <FileText className="h-5 w-5" />
                   </div>
                   {canManage && (
                     <button onClick={() => setDeleting(doc)} className="btn btn-ghost btn-icon" aria-label="Delete document">
-                      <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                      <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                     </button>
                   )}
                 </div>

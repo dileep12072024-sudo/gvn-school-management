@@ -14,12 +14,12 @@ import { isAdmin } from '@/lib/nav'
 import { PageHeader, Modal, EmptyState } from '@/components/ui'
 
 const TYPES = {
-  academic: { label: 'Academic', color: '#2e5a96' },
-  holiday:  { label: 'Holiday',  color: '#2f7d5b' },
-  sports:   { label: 'Sports',   color: '#b8873b' },
-  cultural: { label: 'Cultural', color: '#6b5b95' },
-  exam:     { label: 'Exam',     color: '#b8443c' },
-  other:    { label: 'Other',    color: '#8494a8' },
+  academic: { label: 'Academic', color: 'var(--azure)' },
+  holiday:  { label: 'Holiday',  color: 'var(--success)' },
+  sports:   { label: 'Sports',   color: 'var(--accent)' },
+  cultural: { label: 'Cultural', color: 'var(--violet)' },
+  exam:     { label: 'Exam',     color: 'var(--danger)' },
+  other:    { label: 'Other',    color: 'var(--slate)' },
 } as const
 
 const EMPTY_FORM = {
@@ -114,7 +114,7 @@ export default function CalendarPage() {
         title="Calendar"
         subtitle="School events and holidays"
         actions={canEdit && (
-          <button onClick={() => openAdd()} className="btn btn-brass">
+          <button onClick={() => openAdd()} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Add event
           </button>
         )}
@@ -133,7 +133,7 @@ export default function CalendarPage() {
             <button
               onClick={() => setMonth(new Date())}
               className="text-xs font-semibold"
-              style={{ color: 'var(--navy-lift)' }}
+              style={{ color: 'var(--primary-lift)' }}
             >
               Today
             </button>
@@ -173,8 +173,8 @@ export default function CalendarPage() {
                 {...(canEdit ? { onClick: () => openAdd(day), 'aria-label': `Add event on ${format(day, 'd MMMM')}` } : {})}
                 className="min-h-[74px] rounded-[var(--radius-sm)] p-1.5 text-left transition-all"
                 style={today ? {
-                  background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))',
-                  boxShadow: '0 2px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.18)',
+                  background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))',
+                  boxShadow: '0 2px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.18)',
                 } : {
                   background: 'var(--surface-sunk)',
                   border: '1px solid var(--edge)',
@@ -237,7 +237,7 @@ export default function CalendarPage() {
                   </span>
                   {canEdit && (
                     <button onClick={() => setDeleting(e)} className="btn btn-ghost btn-icon shrink-0" aria-label={`Delete ${e.title}`}>
-                      <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                      <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                     </button>
                   )}
                 </div>

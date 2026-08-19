@@ -16,7 +16,7 @@ import { formatCurrency, formatDate, callingName } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader, StatCard, EmptyState } from '@/components/ui'
 
-const CHART = { navy: '#1e3a5f', brass: '#b8873b', red: '#b8443c', green: '#2f7d5b', slate: '#8494a8' }
+const CHART = { navy: 'var(--primary)', brass: 'var(--accent)', red: 'var(--danger)', green: 'var(--success)', slate: 'var(--slate)' }
 
 /** The last 5 working days, oldest first. */
 function recentSchoolDays(n = 5): string[] {
@@ -132,8 +132,8 @@ export default function DashboardPage() {
 
   const tooltipStyle = {
     borderRadius: '10px',
-    border: '1px solid #ded7c9',
-    background: '#fffefb',
+    border: '1px solid var(--edge)',
+    background: 'var(--surface)',
     boxShadow: '0 10px 24px rgba(22,32,46,.12)',
     fontSize: '12px',
   }
@@ -159,10 +159,10 @@ export default function DashboardPage() {
       />
 
       {error && (
-        <div className="panel-flat flex items-start gap-3 p-4" style={{ borderColor: '#e0b4b0' }}>
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: '#b8443c' }} />
+        <div className="panel-flat flex items-start gap-3 p-4" style={{ borderColor: 'var(--danger)' }}>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--danger)' }} />
           <div>
-            <p className="text-sm font-semibold" style={{ color: '#b8443c' }}>Could not load dashboard data</p>
+            <p className="text-sm font-semibold" style={{ color: 'var(--danger)' }}>Could not load dashboard data</p>
             <p className="mt-0.5 text-xs" style={{ color: 'var(--ink-faint)' }}>{error}</p>
           </div>
         </div>
@@ -176,8 +176,8 @@ export default function DashboardPage() {
           ))
         ) : (
           <>
-            <StatCard label="Active students" value={stats.students} icon={Users} tone="navy" />
-            <StatCard label="Teaching staff"  value={stats.teachers} icon={GraduationCap} tone="brass" />
+            <StatCard label="Active students" value={stats.students} icon={Users} tone="primary" />
+            <StatCard label="Teaching staff"  value={stats.teachers} icon={GraduationCap} tone="accent" />
             <StatCard
               label="Attendance today"
               value={stats.attendancePct === null ? '—' : `${stats.attendancePct}%`}
@@ -206,9 +206,9 @@ export default function DashboardPage() {
             <>
               <ResponsiveContainer width="100%" height={210}>
                 <BarChart data={week} barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e8e3d8" vertical={false} />
-                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#8a97a8' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 12, fill: '#8a97a8' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--paper-deep)" vertical={false} />
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: 'var(--ink-faint)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 12, fill: 'var(--ink-faint)' }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(30,58,95,.05)' }} />
                   <Bar dataKey="present" fill={CHART.navy}  radius={[5, 5, 0, 0]} name="Present" />
                   <Bar dataKey="absent"  fill={CHART.brass} radius={[5, 5, 0, 0]} name="Absent" />
@@ -260,9 +260,9 @@ export default function DashboardPage() {
         <div className="panel p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
-              <Megaphone className="h-4 w-4" style={{ color: 'var(--brass)' }} /> Recent notices
+              <Megaphone className="h-4 w-4" style={{ color: 'var(--accent)' }} /> Recent notices
             </h3>
-            <Link href="/notices" className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--navy-lift)' }}>
+            <Link href="/notices" className="flex items-center gap-1 text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>
               View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -303,9 +303,9 @@ export default function DashboardPage() {
         <div className="panel p-5">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 font-bold" style={{ color: 'var(--ink)' }}>
-              <CalendarDays className="h-4 w-4" style={{ color: 'var(--brass)' }} /> Coming up
+              <CalendarDays className="h-4 w-4" style={{ color: 'var(--accent)' }} /> Coming up
             </h3>
-            <Link href="/calendar" className="text-xs font-semibold" style={{ color: 'var(--navy-lift)' }}>Calendar</Link>
+            <Link href="/calendar" className="text-xs font-semibold" style={{ color: 'var(--primary-lift)' }}>Calendar</Link>
           </div>
 
           {loading ? (
@@ -318,7 +318,7 @@ export default function DashboardPage() {
                 <div key={e.id} className="plaque flex items-center gap-3 p-3">
                   <div
                     className="grid h-10 w-10 shrink-0 place-items-center rounded-[var(--radius-sm)] text-white"
-                    style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}
+                    style={{ background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))' }}
                   >
                     <span className="text-xs font-bold">{formatDate(e.event_date, 'dd')}</span>
                   </div>

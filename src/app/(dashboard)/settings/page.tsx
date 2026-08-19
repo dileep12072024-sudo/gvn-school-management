@@ -27,8 +27,8 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
         <div
           className="grid h-9 w-9 place-items-center rounded-[var(--radius-sm)] text-white"
           style={{
-            background: 'linear-gradient(180deg, var(--navy-lift), var(--navy) 60%, var(--navy-deep))',
-            boxShadow: '0 2px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.25)',
+            background: 'linear-gradient(180deg, var(--primary-lift), var(--primary) 60%, var(--primary-deep))',
+            boxShadow: '0 2px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.25)',
           }}
         >
           <Icon className="h-4 w-4" />

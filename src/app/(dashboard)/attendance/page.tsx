@@ -9,10 +9,10 @@ import { dbErrorMessage } from '@/lib/utils'
 import { PageHeader, StatCard, EmptyState, TableShell, SkeletonRows, Toolbar } from '@/components/ui'
 
 const STATUSES = [
-  { value: 'present',  label: 'P', title: 'Present',   Icon: Check, bg: '#2f7d5b', chip: { bg: '#dcece3', fg: '#1f5c42' } },
-  { value: 'absent',   label: 'A', title: 'Absent',    Icon: X,     bg: '#b8443c', chip: { bg: '#f6dedc', fg: '#94322b' } },
-  { value: 'late',     label: 'L', title: 'Late',      Icon: Clock, bg: '#b8873b', chip: { bg: '#f5e6cd', fg: '#8a6224' } },
-  { value: 'half_day', label: 'H', title: 'Half day',  Icon: Minus, bg: '#8494a8', chip: { bg: '#e4e8ee', fg: '#4b5a70' } },
+  { value: 'present',  label: 'P', title: 'Present',   Icon: Check, bg: 'var(--success)', chip: { bg: 'var(--tint-success)', fg: 'var(--success-deep)' } },
+  { value: 'absent',   label: 'A', title: 'Absent',    Icon: X,     bg: 'var(--danger)', chip: { bg: 'var(--tint-danger)', fg: 'var(--danger-deep)' } },
+  { value: 'late',     label: 'L', title: 'Late',      Icon: Clock, bg: 'var(--accent)', chip: { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)' } },
+  { value: 'half_day', label: 'H', title: 'Half day',  Icon: Minus, bg: 'var(--slate)', chip: { bg: 'var(--tint-slate)', fg: 'var(--slate-deep)' } },
 ] as const
 
 const TODAY = () => format(new Date(), 'yyyy-MM-dd')
@@ -105,7 +105,7 @@ export default function AttendancePage() {
         title="Attendance"
         subtitle="Daily register"
         actions={students.length > 0 && (
-          <button onClick={save} disabled={saving || !dirty} className="btn btn-brass">
+          <button onClick={save} disabled={saving || !dirty} className="btn btn-accent">
             {saving
               ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Saving…</>
               : <><Save className="h-4 w-4" /> {dirty ? 'Save register' : 'Saved'}</>}
@@ -131,10 +131,10 @@ export default function AttendancePage() {
         {students.length > 0 && (
           <div className="flex gap-2 sm:ml-auto sm:self-end">
             <button onClick={() => markAll('present')} className="btn btn-ghost btn-sm">
-              <Check className="h-3.5 w-3.5" style={{ color: '#2f7d5b' }} /> All present
+              <Check className="h-3.5 w-3.5" style={{ color: 'var(--success)' }} /> All present
             </button>
             <button onClick={() => markAll('absent')} className="btn btn-ghost btn-sm">
-              <X className="h-3.5 w-3.5" style={{ color: '#b8443c' }} /> All absent
+              <X className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} /> All absent
             </button>
           </div>
         )}
@@ -144,7 +144,7 @@ export default function AttendancePage() {
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <StatCard label="Present"  value={count('present')}  icon={Check} tone="green" />
           <StatCard label="Absent"   value={count('absent')}   icon={X} tone="red" />
-          <StatCard label="Late"     value={count('late')}     icon={Clock} tone="brass" />
+          <StatCard label="Late"     value={count('late')}     icon={Clock} tone="accent" />
           <StatCard label="Unmarked" value={unmarked}          icon={CircleSlash} tone="slate" />
         </div>
       )}
@@ -173,7 +173,7 @@ export default function AttendancePage() {
                   <div className="flex items-center gap-2.5">
                     <div
                       className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white"
-                      style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}
+                      style={{ background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))' }}
                     >
                       {s.full_name.charAt(0).toUpperCase()}
                     </div>

@@ -39,9 +39,9 @@ const RULES = {
 }
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  active:      { bg: '#dcece3', fg: '#1f5c42' },
-  inactive:    { bg: '#e8e3d8', fg: '#667790' },
-  transferred: { bg: '#f5e6cd', fg: '#8a6224' },
+  active:      { bg: 'var(--tint-success)', fg: 'var(--success-deep)' },
+  inactive:    { bg: 'var(--paper-deep)', fg: 'var(--slate-deep)' },
+  transferred: { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)' },
 }
 
 export default function StudentsPage() {
@@ -167,16 +167,16 @@ export default function StudentsPage() {
         title="Students"
         subtitle={`${total} record${total === 1 ? '' : 's'}`}
         actions={canEdit && (
-          <button onClick={openAdd} className="btn btn-brass">
+          <button onClick={openAdd} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Add student
           </button>
         )}
       />
 
       <div className="stat-grid">
-        <StatCard label="Total students" value={total} icon={Users} tone="navy" />
+        <StatCard label="Total students" value={total} icon={Users} tone="primary" />
         <StatCard label="Active on this page" value={activeOnPage} icon={UserCheck} tone="green" />
-        <StatCard label="Classes" value={classes.length} icon={GraduationCap} tone="brass" />
+        <StatCard label="Classes" value={classes.length} icon={GraduationCap} tone="accent" />
       </div>
 
       <Toolbar>
@@ -227,7 +227,7 @@ export default function StudentsPage() {
           const style = STATUS_STYLE[s.status] ?? STATUS_STYLE.inactive
           return (
             <tr key={s.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
-              <td className="table-cell font-mono text-xs font-bold" style={{ color: 'var(--navy)' }}>
+              <td className="table-cell font-mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
                 {s.admission_number}
               </td>
               <td className="table-cell">
@@ -235,7 +235,7 @@ export default function StudentsPage() {
                   <div
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
                     style={{
-                      background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))',
+                      background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))',
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,.25), 0 1px 2px rgba(0,0,0,.2)',
                     }}
                   >
@@ -259,7 +259,7 @@ export default function StudentsPage() {
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button onClick={() => setDeleting(s)} className="btn btn-ghost btn-icon" aria-label={`Delete ${s.full_name}`}>
-                      <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                      <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                     </button>
                   </div>
                 )}

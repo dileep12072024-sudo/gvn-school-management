@@ -21,9 +21,9 @@ const RULES = {
 }
 
 const STATUS: Record<string, { bg: string; fg: string }> = {
-  pending:  { bg: '#f5e6cd', fg: '#8a6224' },
-  approved: { bg: '#dcece3', fg: '#1f5c42' },
-  rejected: { bg: '#f6dedc', fg: '#94322b' },
+  pending:  { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)' },
+  approved: { bg: 'var(--tint-success)', fg: 'var(--success-deep)' },
+  rejected: { bg: 'var(--tint-danger)', fg: 'var(--danger-deep)' },
 }
 
 const LEAVE_TYPES = ['sick', 'casual', 'earned', 'other']
@@ -121,7 +121,7 @@ export default function LeavePage() {
         actions={
           <button
             onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }}
-            className="btn btn-brass"
+            className="btn btn-accent"
             disabled={teacherResolved && !teacherId}
             title={teacherResolved && !teacherId ? 'Only staff with a teacher record can apply' : undefined}
           >
@@ -132,7 +132,7 @@ export default function LeavePage() {
 
       {teacherResolved && !teacherId && (
         <div className="panel-flat flex items-start gap-3 p-4">
-          <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--brass)' }} />
+          <Info className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--accent)' }} />
           <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>
             Your account is not linked to a teacher record, so you can review requests but not submit one.
             Link it from <strong>Teachers</strong> if you also teach.
@@ -141,7 +141,7 @@ export default function LeavePage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Pending"  value={countOf('pending')}  icon={Clock} tone="brass" />
+        <StatCard label="Pending"  value={countOf('pending')}  icon={Clock} tone="accent" />
         <StatCard label="Approved" value={countOf('approved')} icon={Check} tone="green" />
         <StatCard label="Rejected" value={countOf('rejected')} icon={X} tone="red" />
       </div>
@@ -188,13 +188,13 @@ export default function LeavePage() {
                       onClick={() => setActing({ row: l, status: 'approved' })}
                       className="btn btn-ghost btn-icon" aria-label="Approve leave"
                     >
-                      <Check className="h-3.5 w-3.5" style={{ color: '#2f7d5b' }} />
+                      <Check className="h-3.5 w-3.5" style={{ color: 'var(--success)' }} />
                     </button>
                     <button
                       onClick={() => setActing({ row: l, status: 'rejected' })}
                       className="btn btn-ghost btn-icon" aria-label="Reject leave"
                     >
-                      <X className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                      <X className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                     </button>
                   </div>
                 )}

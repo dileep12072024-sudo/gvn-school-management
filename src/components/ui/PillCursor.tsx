@@ -18,12 +18,18 @@ import { useEffect, useRef } from 'react'
  * and you still know exactly what you are about to click.
  */
 
-/** What the pill is willing to dock onto. */
-const DOCK = 'a, button, [role="button"], .seg-option, .table-row, summary, label, input[type="checkbox"], input[type="radio"]'
+/** What the pill is willing to dock onto — anything you can operate. */
+const DOCK = [
+  'a', 'button', '[role="button"]', '.seg-option', '.table-row',
+  'summary', 'label', 'select', 'input', 'textarea',
+  // Cards are targets too — a class tile or a stat tile should light up the
+  // same way a button does.
+  '.tilt',
+].join(', ')
 
 const IDLE = 22          // px, the free-floating capsule
-const MAX_W = 460        // don't swallow the screen on a full-width row
-const MAX_H = 130
+const MAX_W = 620        // don't swallow the screen on a full-width row
+const MAX_H = 210       // tall enough for a card, short enough to exclude a page section
 const CHASE = 0.24       // position ease
 const MORPH = 0.19       // size ease — a touch slower, so it stretches
 

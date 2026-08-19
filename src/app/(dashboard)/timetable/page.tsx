@@ -14,12 +14,12 @@ const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8]
 
 // Muted, print-safe subject tints — deliberately not the neon set.
 const TINTS = [
-  { bg: '#e5ecf4', edge: '#b9cadd', ink: '#1e3a5f' },
-  { bg: '#f2e9dc', edge: '#ddc9a8', ink: '#8a6224' },
-  { bg: '#e2eee8', edge: '#b6d5c6', ink: '#1f5c42' },
-  { bg: '#f0e4e6', edge: '#dcbdc1', ink: '#94322b' },
-  { bg: '#e9e6f0', edge: '#c8c1da', ink: '#463c66' },
-  { bg: '#e6eef0', edge: '#bcd3d8', ink: '#265a63' },
+  { bg: 'var(--tint-primary)', edge: '#bccee8', ink: 'var(--primary)' },
+  { bg: '#d7f0eb', edge: '#a8ddd3', ink: 'var(--accent-deep)' },
+  { bg: '#dcefe7', edge: '#aed4c3', ink: 'var(--success-deep)' },
+  { bg: '#f4e3e2', edge: '#e0bfbd', ink: 'var(--danger-deep)' },
+  { bg: '#e8e6f2', edge: '#c3bfdc', ink: '#463c66' },
+  { bg: '#dfeef1', edge: '#b3d3da', ink: '#245a63' },
 ]
 
 const EMPTY_SLOT = {
@@ -157,7 +157,7 @@ export default function TimetablePage() {
         title="Timetable"
         subtitle={className ? `${className} — weekly schedule` : 'Period-wise weekly schedule'}
         actions={canEdit && classId && (
-          <button onClick={() => openAdd()} className="btn btn-brass">
+          <button onClick={() => openAdd()} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Add period
           </button>
         )}
@@ -191,7 +191,7 @@ export default function TimetablePage() {
           <div className="scrollbar-thin overflow-x-auto">
             <table className="w-full border-collapse" style={{ minWidth: 760 }}>
               <thead>
-                <tr style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}>
+                <tr style={{ background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))' }}>
                   <th className="w-16 px-3 py-3.5 text-left text-[11px] font-bold uppercase tracking-[.08em] text-white/50">
                     Period
                   </th>
@@ -209,8 +209,8 @@ export default function TimetablePage() {
                       <div
                         className="mx-auto grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-white"
                         style={{
-                          background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))',
-                          boxShadow: '0 2px 0 var(--navy-deep), inset 0 1px 0 rgba(255,255,255,.2)',
+                          background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))',
+                          boxShadow: '0 2px 0 var(--primary-deep), inset 0 1px 0 rgba(255,255,255,.2)',
                         }}
                       >
                         {p}
@@ -245,7 +245,7 @@ export default function TimetablePage() {
                                   aria-label={`Remove ${slot.subject} on ${d} period ${p}`}
                                   className="absolute right-1 top-1 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
                                 >
-                                  <Trash2 className="h-3 w-3" style={{ color: '#b8443c' }} />
+                                  <Trash2 className="h-3 w-3" style={{ color: 'var(--danger)' }} />
                                 </button>
                               )}
                             </div>
@@ -323,10 +323,10 @@ export default function TimetablePage() {
             {clash && (
               <div
                 className="mt-2 flex items-start gap-2 rounded-[var(--radius-sm)] px-3 py-2"
-                style={{ background: '#f6dedc', border: '1px solid #e0b4b0' }}
+                style={{ background: 'var(--tint-danger)', border: '1px solid var(--danger)' }}
               >
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: '#94322b' }} />
-                <p className="text-xs" style={{ color: '#94322b' }}>
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" style={{ color: 'var(--danger-deep)' }} />
+                <p className="text-xs" style={{ color: 'var(--danger-deep)' }}>
                   This teacher already has period {form.period} on {form.day} with{' '}
                   <strong>{clash.classes?.name}</strong>. Saving will double-book them.
                 </p>

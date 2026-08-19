@@ -174,15 +174,15 @@ export default function ExamsPage() {
         title="Exams & results"
         subtitle={`${exams.length} exam${exams.length === 1 ? '' : 's'} scheduled`}
         actions={
-          <button onClick={() => { setExamForm(EMPTY_EXAM); setErrors({}); setShowExam(true) }} className="btn btn-brass">
+          <button onClick={() => { setExamForm(EMPTY_EXAM); setErrors({}); setShowExam(true) }} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Schedule exam
           </button>
         }
       />
 
       <div className="stat-grid">
-        <StatCard label="Total exams" value={exams.length} icon={FileText} tone="navy" />
-        <StatCard label="Upcoming" value={upcoming} icon={TrendingUp} tone="brass" />
+        <StatCard label="Total exams" value={exams.length} icon={FileText} tone="primary" />
+        <StatCard label="Upcoming" value={upcoming} icon={TrendingUp} tone="accent" />
         <StatCard label="Subjects" value={subjects} icon={Award} tone="green" />
       </div>
 
@@ -206,7 +206,7 @@ export default function ExamsPage() {
             <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>{e.name}</td>
             <td className="table-cell">{e.classes?.name ?? '—'}</td>
             <td className="table-cell">
-              <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}>{e.subject}</span>
+              <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>{e.subject}</span>
             </td>
             <td className="table-cell">{formatDate(e.exam_date)}</td>
             <td className="table-cell tabular-nums">{e.max_marks}</td>
@@ -217,7 +217,7 @@ export default function ExamsPage() {
                   <ClipboardList className="h-3.5 w-3.5" /> Enter marks
                 </button>
                 <button onClick={() => setDeleting(e)} className="btn btn-ghost btn-icon" aria-label={`Delete ${e.name}`}>
-                  <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                  <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                 </button>
               </div>
             </td>
@@ -361,7 +361,7 @@ export default function ExamsPage() {
                     </td>
                     <td className="table-cell">
                       {valid
-                        ? <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}>
+                        ? <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>
                             {gradeFor(n, max)} · {Math.round(percentage(n, max))}%
                           </span>
                         : <span style={{ color: 'var(--ink-faint)' }}>—</span>}
@@ -371,8 +371,8 @@ export default function ExamsPage() {
                         <span
                           className="badge"
                           style={isPass(n, Number(marksExam?.passing_marks ?? 0))
-                            ? { background: '#dcece3', color: '#1f5c42' }
-                            : { background: '#f6dedc', color: '#94322b' }}
+                            ? { background: 'var(--tint-success)', color: 'var(--success-deep)' }
+                            : { background: 'var(--tint-danger)', color: 'var(--danger-deep)' }}
                         >
                           {isPass(n, Number(marksExam?.passing_marks ?? 0)) ? 'Pass' : 'Fail'}
                         </span>

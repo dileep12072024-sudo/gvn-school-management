@@ -120,15 +120,15 @@ export default function ClassesPage() {
         title="Classes & sections"
         subtitle={`${classes.length} classes · ${sections.length} sections`}
         actions={
-          <button onClick={openAdd} className="btn btn-brass">
+          <button onClick={openAdd} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Add {tab === 'classes' ? 'class' : 'section'}
           </button>
         }
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Classes" value={classes.length} icon={BookOpen} tone="navy" />
-        <StatCard label="Sections" value={sections.length} icon={LayoutGrid} tone="brass" />
+        <StatCard label="Classes" value={classes.length} icon={BookOpen} tone="primary" />
+        <StatCard label="Sections" value={sections.length} icon={LayoutGrid} tone="accent" />
         <StatCard label="Students enrolled" value={Object.values(counts).reduce((a, b) => a + b, 0)} icon={Users} tone="green" />
       </div>
 
@@ -158,7 +158,7 @@ export default function ClassesPage() {
                   <div className="mb-3 flex items-start justify-between">
                     <div
                       className="grid h-10 w-10 place-items-center rounded-[var(--radius-sm)] text-white"
-                      style={{ background: 'linear-gradient(180deg, var(--navy-lift), var(--navy-deep))' }}
+                      style={{ background: 'linear-gradient(180deg, var(--primary-lift), var(--primary-deep))' }}
                     >
                       <BookOpen className="h-5 w-5" />
                     </div>
@@ -167,7 +167,7 @@ export default function ClassesPage() {
                         <Pencil className="h-3 w-3" />
                       </button>
                       <button onClick={() => setDeleting({ kind: 'classes', row: c })} className="btn btn-ghost btn-icon" aria-label={`Delete ${c.name}`}>
-                        <Trash2 className="h-3 w-3" style={{ color: '#b8443c' }} />
+                        <Trash2 className="h-3 w-3" style={{ color: 'var(--danger)' }} />
                       </button>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export default function ClassesPage() {
             <EmptyState icon={LayoutGrid} title="No sections yet" hint="Add a section under a class." colSpan={5} />
           ) : sections.map(s => (
             <tr key={s.id} className="table-row" style={{ borderTop: '1px solid var(--edge)' }}>
-              <td className="table-cell font-semibold" style={{ color: 'var(--navy)' }}>{s.classes?.name ?? '—'}</td>
+              <td className="table-cell font-semibold" style={{ color: 'var(--primary)' }}>{s.classes?.name ?? '—'}</td>
               <td className="table-cell font-semibold" style={{ color: 'var(--ink)' }}>{s.name}</td>
               <td className="table-cell">
                 {s.teachers?.full_name ?? <span style={{ color: 'var(--ink-faint)' }}>Not assigned</span>}
@@ -206,7 +206,7 @@ export default function ClassesPage() {
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button onClick={() => setDeleting({ kind: 'sections', row: s })} className="btn btn-ghost btn-icon" aria-label={`Delete section ${s.name}`}>
-                    <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                    <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                   </button>
                 </div>
               </td>

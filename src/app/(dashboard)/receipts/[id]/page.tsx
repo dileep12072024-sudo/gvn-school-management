@@ -54,7 +54,7 @@ export default function ReceiptPage() {
         <button onClick={() => router.push('/fees')} className="btn btn-ghost">
           <ArrowLeft className="h-4 w-4" /> Back to fees
         </button>
-        <button onClick={() => window.print()} className="btn btn-brass">
+        <button onClick={() => window.print()} className="btn btn-accent">
           <Printer className="h-4 w-4" /> Print receipt
         </button>
       </div>
@@ -65,16 +65,16 @@ export default function ReceiptPage() {
         style={{ background: 'var(--surface)' }}
       >
         {/* Letterhead */}
-        <div className="flex items-start justify-between gap-6 pb-5" style={{ borderBottom: '2px solid var(--navy)' }}>
+        <div className="flex items-start justify-between gap-6 pb-5" style={{ borderBottom: '2px solid var(--primary)' }}>
           <div className="flex items-center gap-3.5">
             <div
               className="grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)] text-white"
-              style={{ background: 'linear-gradient(180deg, var(--brass-lift), var(--brass-deep))' }}
+              style={{ background: 'linear-gradient(180deg, var(--accent-lift), var(--accent-deep))' }}
             >
               <GraduationCap className="h-8 w-8" />
             </div>
             <div>
-              <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--navy)', fontFamily: 'var(--font-serif), serif' }}>
+              <h1 className="text-xl font-bold leading-tight" style={{ color: 'var(--primary)', fontFamily: 'var(--font-serif), serif' }}>
                 Geethanjali Vidya Nilayam
               </h1>
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
@@ -83,7 +83,7 @@ export default function ReceiptPage() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-[.14em]" style={{ color: 'var(--brass)' }}>
+            <p className="text-[10px] font-bold uppercase tracking-[.14em]" style={{ color: 'var(--accent)' }}>
               Fee Receipt
             </p>
             <p className="mt-1 font-mono text-sm font-bold" style={{ color: 'var(--ink)' }}>
@@ -127,9 +127,9 @@ export default function ReceiptPage() {
                 {formatCurrency(amount)}
               </td>
             </tr>
-            <tr style={{ borderTop: '2px solid var(--navy)' }}>
+            <tr style={{ borderTop: '2px solid var(--primary)' }}>
               <td className="table-cell font-bold" colSpan={2} style={{ color: 'var(--ink)' }}>Total paid</td>
-              <td className="table-cell text-right text-lg font-bold tabular-nums" style={{ color: 'var(--navy)' }}>
+              <td className="table-cell text-right text-lg font-bold tabular-nums" style={{ color: 'var(--primary)' }}>
                 {formatCurrency(amount)}
               </td>
             </tr>

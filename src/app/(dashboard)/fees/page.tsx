@@ -35,9 +35,9 @@ const RULES = {
 const FEE_TYPES = ['Tuition', 'Transport', 'Examination', 'Library', 'Laboratory', 'Uniform', 'Admission', 'Other']
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
-  paid:    { bg: '#dcece3', fg: '#1f5c42' },
-  pending: { bg: '#f5e6cd', fg: '#8a6224' },
-  overdue: { bg: '#f6dedc', fg: '#94322b' },
+  paid:    { bg: 'var(--tint-success)', fg: 'var(--success-deep)' },
+  pending: { bg: 'var(--tint-accent)', fg: 'var(--accent-deep)' },
+  overdue: { bg: 'var(--tint-danger)', fg: 'var(--danger-deep)' },
 }
 
 /** GVN/2024-25/000137 — readable, sortable, unique per record. */
@@ -186,7 +186,7 @@ export default function FeesPage() {
         title="Fees"
         subtitle={`${total} record${total === 1 ? '' : 's'}`}
         actions={
-          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }} className="btn btn-brass">
+          <button onClick={() => { setForm(EMPTY_FORM); setErrors({}); setShowModal(true) }} className="btn btn-accent">
             <Plus className="h-4 w-4" /> Raise fee
           </button>
         }
@@ -194,7 +194,7 @@ export default function FeesPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Collected" value={formatCurrency(totals.collected)} icon={CheckCircle} tone="green" />
-        <StatCard label="Pending"   value={formatCurrency(totals.pending)}   icon={Wallet} tone="brass" />
+        <StatCard label="Pending"   value={formatCurrency(totals.pending)}   icon={Wallet} tone="accent" />
         <StatCard
           label="Overdue"
           value={formatCurrency(totals.overdue)}
@@ -244,7 +244,7 @@ export default function FeesPage() {
               </td>
               <td className="table-cell">{f.students?.classes?.name ?? '—'}</td>
               <td className="table-cell">
-                <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--navy)' }}>{f.fee_type}</span>
+                <span className="badge" style={{ background: 'var(--paper-deep)', color: 'var(--primary)' }}>{f.fee_type}</span>
               </td>
               <td className="table-cell font-bold tabular-nums" style={{ color: 'var(--ink)' }}>
                 {formatCurrency(Number(f.amount))}
@@ -258,7 +258,7 @@ export default function FeesPage() {
                 <div className="flex items-center gap-1.5">
                   {f.status !== 'paid' ? (
                     <button onClick={() => setPaying(f)} className="btn btn-ghost btn-sm">
-                      <CheckCircle className="h-3.5 w-3.5" style={{ color: '#2f7d5b' }} /> Record payment
+                      <CheckCircle className="h-3.5 w-3.5" style={{ color: 'var(--success)' }} /> Record payment
                     </button>
                   ) : (
                     <Link href={`/receipts/${f.id}`} className="btn btn-ghost btn-sm">
@@ -266,7 +266,7 @@ export default function FeesPage() {
                     </Link>
                   )}
                   <button onClick={() => setDeleting(f)} className="btn btn-ghost btn-icon" aria-label="Delete fee record">
-                    <Trash2 className="h-3.5 w-3.5" style={{ color: '#b8443c' }} />
+                    <Trash2 className="h-3.5 w-3.5" style={{ color: 'var(--danger)' }} />
                   </button>
                 </div>
               </td>

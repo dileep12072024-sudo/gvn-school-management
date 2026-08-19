@@ -142,8 +142,8 @@ export default function PortalPage() {
         <div
           className="grid h-14 w-14 shrink-0 place-items-center rounded-[var(--radius)] text-lg font-bold text-white"
           style={{
-            background: 'linear-gradient(180deg, var(--brass-lift), var(--brass) 60%, var(--brass-deep))',
-            boxShadow: '0 3px 0 var(--brass-deep), inset 0 1px 0 rgba(255,255,255,.3)',
+            background: 'linear-gradient(180deg, var(--accent-lift), var(--accent) 60%, var(--accent-deep))',
+            boxShadow: '0 3px 0 var(--accent-deep), inset 0 1px 0 rgba(255,255,255,.3)',
           }}
         >
           {getInitials(active?.full_name ?? '')}
@@ -156,7 +156,7 @@ export default function PortalPage() {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
-          <Link href={`/report-card?student=${active?.id}`} className="btn btn-brass btn-sm">
+          <Link href={`/report-card?student=${active?.id}`} className="btn btn-accent btn-sm">
             <FileText className="h-3.5 w-3.5" /> Report card
           </Link>
         </div>
@@ -168,7 +168,7 @@ export default function PortalPage() {
           tone={attendancePct >= 75 ? 'green' : 'red'}
           hint={`${present} of ${attendance.length} days`}
         />
-        <StatCard label="Average score" value={`${avgPct}%`} icon={Award} tone="navy" hint={`${results.length} results`} />
+        <StatCard label="Average score" value={`${avgPct}%`} icon={Award} tone="primary" hint={`${results.length} results`} />
         <StatCard
           label="Fees outstanding" value={formatCurrency(dueTotal)} icon={IndianRupee}
           tone={dueTotal > 0 ? 'red' : 'green'}
@@ -182,7 +182,7 @@ export default function PortalPage() {
       {/* ── Today's timetable ───────────────────────────── */}
       <section className="panel p-5">
         <div className="mb-4 flex items-center gap-2">
-          <Clock className="h-4 w-4" style={{ color: 'var(--brass)' }} />
+          <Clock className="h-4 w-4" style={{ color: 'var(--accent)' }} />
           <h3 className="font-bold capitalize" style={{ color: 'var(--ink)' }}>Today — {today}</h3>
         </div>
         {detailLoading ? (
@@ -193,7 +193,7 @@ export default function PortalPage() {
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
             {todayPeriods.map(p => (
               <div key={`${p.day}-${p.period}`} className="plaque p-3">
-                <p className="text-[11px] font-semibold" style={{ color: 'var(--brass-deep)' }}>Period {p.period}</p>
+                <p className="text-[11px] font-semibold" style={{ color: 'var(--accent-deep)' }}>Period {p.period}</p>
                 <p className="truncate text-sm font-bold" style={{ color: 'var(--ink)' }}>{p.subject}</p>
                 <p className="truncate text-[11px]" style={{ color: 'var(--ink-faint)' }}>
                   {String(p.start_time).slice(0, 5)}–{String(p.end_time).slice(0, 5)}
@@ -223,7 +223,7 @@ export default function PortalPage() {
                 <td className="table-cell">{r.exams?.exam_date ? formatDate(r.exams.exam_date) : '—'}</td>
                 <td className="table-cell tabular-nums">{marks} / {max}</td>
                 <td className="table-cell">
-                  <span className="badge" style={{ background: '#e5ecf4', color: '#1e3a5f' }}>
+                  <span className="badge" style={{ background: 'var(--tint-primary)', color: 'var(--primary)' }}>
                     {r.grade ?? gradeFor(marks, max)}
                   </span>
                 </td>
@@ -247,10 +247,10 @@ export default function PortalPage() {
               <span
                 className="badge capitalize"
                 style={f.status === 'paid'
-                  ? { background: '#dcece3', color: '#1f5c42' }
+                  ? { background: 'var(--tint-success)', color: 'var(--success-deep)' }
                   : f.status === 'overdue'
-                    ? { background: '#f6dedc', color: '#94322b' }
-                    : { background: '#f5e6cd', color: '#8a6224' }}
+                    ? { background: 'var(--tint-danger)', color: 'var(--danger-deep)' }
+                    : { background: 'var(--tint-accent)', color: 'var(--accent-deep)' }}
               >
                 {f.status}
               </span>

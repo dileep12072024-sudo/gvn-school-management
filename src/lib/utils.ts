@@ -128,7 +128,6 @@ export function getRoleBadgeColor(role: string) {
     vice_principal: 'bg-blue-100 text-blue-800',
     teacher: 'bg-green-100 text-green-800',
     parent: 'bg-orange-100 text-orange-800',
-    student: 'bg-yellow-100 text-yellow-800',
   }
   return colors[role] || 'bg-gray-100 text-gray-800'
 }
@@ -140,7 +139,6 @@ export function getRoleLabel(role: string) {
     vice_principal: 'Vice Principal',
     teacher: 'Teacher',
     parent: 'Parent',
-    student: 'Student',
   }
   return labels[role] || role
 }

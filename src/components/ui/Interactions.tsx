@@ -9,7 +9,7 @@ const FEEL: [string, Haptic][] = [
   ['[data-haptic="error"]',              'error'],
   ['[data-haptic="success"]',            'success'],
   ['.btn-danger',                        'warn'],
-  ['.btn-primary, .btn-brass',           'press'],
+  ['.btn-primary, .btn-accent',           'press'],
   ['input[type="checkbox"], input[type="radio"], select, option', 'select'],
   ['a, button, [role="button"], .table-row, label, summary',      'tap'],
 ]

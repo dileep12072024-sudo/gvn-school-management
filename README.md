@@ -22,7 +22,7 @@ behind a classical, glossy, mobile-first UI.
 
 - **Primary (Navy):** `#1e3a5f`
 - **Accent (Gold):** `#f59e0b`
-- **UI Style:** "Lacquer" — layered shadow depth, a small specular gloss band,
+- **UI Style:** "Meridian" — layered shadow depth, a small specular gloss band,
   pointer-tracked 3D tilt on pointer devices. No blur-glass, no neon.
   See `src/app/globals.css`.
 
@@ -51,7 +51,6 @@ behind a classical, glossy, mobile-first UI.
 | Vice Principal | Manage classes, timetable, transport |
 | Teacher | Attendance, marks, timetable (own) |
 | Parent | Ward's data, fees, attendance |
-| Student | Own timetable, results, notices |
 
 ---
 
@@ -67,7 +66,7 @@ behind a classical, glossy, mobile-first UI.
 - **Exams & Results** — Scheduling, marks entry, report cards
 - **Timetable** — Period-wise schedule builder
 - **Notices** — Pinnable announcements with role targeting
-- **Transport** — Routes, vehicles, drivers, student allocation
+- **Transport** — Routes, vehicles, drivers (own records, no login), student allocation
 - **Calendar & Events** — School calendar with approval flow
 - **Messages** — Teacher-parent communication
 - **Leave Management** — Staff leave requests with approval
@@ -122,10 +121,13 @@ Create the first accounts in **Supabase → Authentication → Users**, then set
 UPDATE public.profiles SET role = 'principal' WHERE email = 'principal@gvn.edu.in';
 ```
 
-Roles: `organiser`, `principal`, `vice_principal`, `teacher`, `parent`, `student`.
+Roles: `organiser`, `principal`, `vice_principal`, `teacher`, `parent`.
 
-A parent or student only ever sees their own child/self — link them by setting
-`students.parent_id` (parent) or `students.profile_id` (student) to that profile's id.
+Students do not sign in for themselves — a parent account carries the child's
+view of attendance, fees and results.
+
+A parent only ever sees their own child — link them by setting
+`students.parent_id` to that profile's id.
 
 > Never commit real passwords to this file.
 
@@ -164,8 +166,8 @@ All styling routes through CSS custom properties and component classes in
 <div className="panel p-6">…</div>        {/* raised surface, gloss band     */}
 <div className="panel-flat p-4">…</div>   {/* one step down                  */}
 <div className="plaque p-4">…</div>       {/* engraved / inset               */}
-<button className="btn btn-primary" />    {/* navy key, hard bottom edge     */}
-<button className="btn btn-brass" />      {/* brass key                      */}
+<button className="btn btn-primary" />    {/* indigo key, hard bottom edge   */}
+<button className="btn btn-accent" />     {/* teal key                       */}
 <button className="btn btn-ghost" />      {/* paper key                      */}
 <input className="input" />               {/* milled well, 16px on mobile    */}
 <div className="stat-grid">…</div>        {/* auto-fitting tile row          */}
